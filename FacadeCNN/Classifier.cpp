@@ -21,7 +21,11 @@ Classifier::Classifier(const std::string& model_file, const std::string& trained
 	input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
 
 	/* Load the binaryproto mean file. */
-	SetMean(mean_file);
+	mean_used_ = false;
+	if (!mean_file.empty()) {
+		mean_used_ = true;
+		SetMean(mean_file);
+	}
 
 	/* Load labels. */
 	/*std::ifstream labels(label_file.c_str());
@@ -101,8 +105,8 @@ void Classifier::SetMean(const std::string& mean_file) {
 
 std::vector<float> Classifier::Predict(const cv::Mat& img) {
 	caffe::Blob<float>* input_layer = net_->input_blobs()[0];
-	input_layer->Reshape(1, num_channels_,
-		input_geometry_.height, input_geometry_.width);
+	input_layer->Reshape(1, num_channels_, input_geometry_.height, input_geometry_.width);
+	
 	/* Forward dimension change to all layers. */
 	net_->Reshape();
 
@@ -165,7 +169,12 @@ void Classifier::Preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_chan
 		sample_resized.convertTo(sample_float, CV_32FC1);
 
 	cv::Mat sample_normalized;
-	cv::subtract(sample_float, mean_, sample_normalized);
+	if (mean_used_) {
+		cv::subtract(sample_float, mean_, sample_normalized);
+	}
+	else {
+		sample_normalized = sample_float.clone();
+	}
 
 	/* This operation will write the separate BGR planes directly to the
 	* input layer of the network because it is wrapped by the cv::Mat

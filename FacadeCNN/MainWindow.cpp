@@ -11,6 +11,7 @@
 #include "facadeC.h"
 #include "facadeD.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QTextStream>
 
 #ifndef SQR
@@ -128,20 +129,23 @@ void MainWindow::parameterEstimation() {
 	ParameterEstimationDialog dlg;
 	if (!dlg.exec()) return;
 
-	boost::filesystem::path results_dir("results/");
-	boost::filesystem::create_directory(results_dir);
+	int NUM_GRAMMARS = 2;
+
+	QString results_dir = dlg.ui.lineEditOutputDirectory->text() + "/";
+	if (QDir(results_dir).exists()) {
+		QDir(results_dir).removeRecursively();
+	}
+	QDir().mkdir(results_dir);
 
 	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
-	Classifier classifier((dlg.ui.lineEditClassificationDirectory->text() + "/model/deploy.prototxt").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/model/train_iter_20000.caffemodel").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/data/mean.binaryproto").toUtf8().constData());
-	std::vector<Regression*> regressions(4);
-	for (int i = 0; i < 4; ++i) {
-		char deploy_name[256];
-		sprintf(deploy_name, (dlg.ui.lineEditRegressionDirectory->text() + "/model/deploy_%02d.prototxt").toUtf8().constData(), i + 1);
-		char model_name[256];
-		sprintf(model_name, (dlg.ui.lineEditRegressionDirectory->text() + "/model/train_%02d_iter_80000.caffemodel").toUtf8().constData(), i + 1);
-		regressions[i] = new Regression(deploy_name, model_name);
+	Classifier classifier((dlg.ui.lineEditClassificationDirectory->text() + "/model/deploy.prototxt").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/model/train_iter_20000.caffemodel").toUtf8().constData(), "");
+	std::vector<boost::shared_ptr<Regression>> regressions(4);
+	for (int i = 0; i < NUM_GRAMMARS; ++i) {
+		QString deploy_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/deploy_%1.prototxt").arg(i + 1, 2, 10, QChar('0'));
+		QString model_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/train_%1_iter_40000.caffemodel").arg(i + 1, 2, 10, QChar('0'));
+		regressions[i] = boost::shared_ptr<Regression>(new Regression(deploy_name.toUtf8().constData(), model_name.toUtf8().constData()));
 	}
 
 	int correct_classification = 0;
@@ -149,23 +153,24 @@ void MainWindow::parameterEstimation() {
 
 	// read the ground truth of parameter values
 	std::map<int, std::vector<std::vector<float>>> params_truth;
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < NUM_GRAMMARS; ++i) {
 		params_truth[i] = std::vector<std::vector<float>>();
 
-		char file_path[256];
-		sprintf(file_path, (dlg.ui.lineEditTestDataDirectory->text() + "/images/%02d/parameters.txt").toUtf8().constData(), i + 1);
-		std::ifstream in_params(file_path);
-		while (true) {
-			std::string line;
-			std::getline(in_params, line);
-			if (line.empty()) break;
+		QString file_path = dlg.ui.lineEditTestDataDirectory->text() + QString("/images/%1/parameters.txt").arg(i + 1, 2, 10, QChar('0'));
 
-			std::vector<std::string> strs;
-			boost::split(strs, line, boost::is_any_of(","));
+		QFile file_params(file_path);
+		file_params.open(QIODevice::ReadOnly);
+		QTextStream in_params(&file_params);
+
+		while (true) {
+			QString line = in_params.readLine();
+			if (line.isEmpty()) break;
+
+			QStringList strs = line.split(",");
 
 			std::vector<float> values;
 			for (int j = 0; j < strs.size(); ++j) {
-				values.push_back(stof(strs[j]));
+				values.push_back(strs[j].toFloat());
 			}
 
 			params_truth[i].push_back(values);
@@ -175,25 +180,24 @@ void MainWindow::parameterEstimation() {
 	std::map<int, std::vector<float>> rmse;
 	std::map<int, int> rmse_count;
 
-	std::ifstream in((dlg.ui.lineEditTestDataDirectory->text() + "/test.txt").toUtf8().constData());
+	QFile file(dlg.ui.lineEditTestDataDirectory->text() + "/test.txt");
+	file.open(QIODevice::ReadOnly);
+	QTextStream in(&file);
 	int iter = 0;
 	while (true) {
-		std::string line;
-		std::getline(in, line);
-		int index = line.find(" ");
-		if (index == std::string::npos) break;
+		QString line = in.readLine();
+		QStringList list = line.split(" ");
+		if (list.size() < 2) break;
 
-		std::string file_path = line.substr(0, index);
-		int grammar_id = std::stoi(line.substr(index + 1));
+		QString file_path = list[0];
+		int grammar_id = list[1].toInt();
+		if (grammar_id >= NUM_GRAMMARS) continue;
 
 		// read the test image
-		cv::Mat img = cv::imread((std::string((dlg.ui.lineEditTestDataDirectory->text() + "/images/").toUtf8().constData()) + file_path).c_str());
+		cv::Mat img = cv::imread((dlg.ui.lineEditTestDataDirectory->text() + "/images/" + file_path).toUtf8().constData());
 
-		// convert the image to grayscale with 128x128 size
-		cv::Mat grayImg;
-		cv::cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
-		cv::resize(grayImg, grayImg, cv::Size(128, 128));
-		cv::threshold(grayImg, grayImg, 230, 255, cv::THRESH_BINARY);
+		// resize the image to 227x227
+		cv::resize(img, img, cv::Size(227, 227));
 
 		// classification
 		std::vector<Prediction> predictions = classifier.Classify(img, 4);
@@ -201,12 +205,22 @@ void MainWindow::parameterEstimation() {
 		else incorrect_classification++;
 
 		// parameter estimation
-		std::vector<float> predicted_params = regressions[grammar_id]->Predict(grayImg);
+		std::vector<float> predicted_params = regressions[grammar_id]->Predict(img);
 
 		// obtain file id
-		int index1 = file_path.rfind("/");
-		int index2 = file_path.find(".", index1);
-		int file_id = stoi(file_path.substr(index1 + 1, index2 - index1 - 1));
+		int index1 = file_path.lastIndexOf("/");
+		int index2 = file_path.indexOf(".", index1);
+		int file_id = file_path.mid(index1 + 1, index2 - index1 - 1).toInt();
+
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////
+		// デバッグ用（classificationが未トレーニングのため、とりあえず
+
+		predictions[0].first = grammar_id;
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 		// 誤差を計算
 		if (predictions[0].first == grammar_id) {

@@ -35,6 +35,7 @@ private:
 	cv::Size input_geometry_;
 	int num_channels_;
 	cv::Mat mean_;
+	bool mean_used_;
 	std::vector<std::string> labels_;
 };
 

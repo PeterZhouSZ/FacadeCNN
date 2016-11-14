@@ -4,14 +4,17 @@
 ParameterEstimationDialog::ParameterEstimationDialog(QWidget *parent) : QDialog(parent) {
 	ui.setupUi(this);
 
-	ui.lineEditTestDataDirectory->setText("C:/Anaconda/caffe/facade/data");
-	ui.lineEditClassificationDirectory->setText("C:/Anaconda/caffe/facade");
-	ui.lineEditRegressionDirectory->setText("C:/Anaconda/caffe/facade_regression");
+	//ui.lineEditTestDataDirectory->setText("C:/Anaconda/caffe/facade/data");
+	ui.lineEditTestDataDirectory->setText("//cuda.cs.purdue.edu/scratch2/facade/data");
+	//ui.lineEditClassificationDirectory->setText("C:/Anaconda/caffe/facade");
+	ui.lineEditClassificationDirectory->setText("//cuda.cs.purdue.edu/scratch2/facade");
+	//ui.lineEditRegressionDirectory->setText("C:/Anaconda/caffe/facade_regression");
+	ui.lineEditRegressionDirectory->setText("//cuda.cs.purdue.edu/scratch2/facade_regression");
 	ui.lineEditOutputDirectory->setText("results");
-	ui.lineEditNumFloorsMin->setText("4");
-	ui.lineEditNumFloorsMax->setText("40");
-	ui.lineEditNumColumnsMin->setText("4");
-	ui.lineEditNumColumnsMax->setText("40");
+	ui.lineEditNumFloorsMin->setText("1");
+	ui.lineEditNumFloorsMax->setText("20");
+	ui.lineEditNumColumnsMin->setText("1");
+	ui.lineEditNumColumnsMax->setText("20");
 
 	connect(ui.pushButtonTestDataDirectory, SIGNAL(clicked()), this, SLOT(onTestDataDirectory()));
 	connect(ui.pushButtonClassificationDirectory, SIGNAL(clicked()), this, SLOT(onClassificationDirectory()));

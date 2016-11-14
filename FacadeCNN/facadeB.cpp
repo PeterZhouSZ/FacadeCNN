@@ -5,8 +5,13 @@ cv::Mat generateFacadeB(int width, int height, int thickness, std::pair<int, int
 	// #floors has to be at least 2 for this facade.
 	if (range_NF.first < 2) range_NF.first = 2;
 
-	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
-	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
+	// #columns has to be at least 1 for this facade.
+	if (range_NC.first < 1) range_NC.first = 1;
+
+	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
+	if (NF < range_NF.first) NF = range_NF.first;
+	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
+	if (NC < range_NC.first) NC = range_NC.first;
 
 	float BS = (float)width / (params[7] * 2 + params[8] * NC) * params[7];
 	float TW = (float)width / (params[7] * 2 + params[8] * NC) * params[8];
@@ -53,6 +58,9 @@ cv::Mat generateFacadeB(int width, int height, int thickness, std::pair<int, int
 cv::Mat generateRandomFacadeB(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	// #floors has to be at least 2 for this facade.
 	if (range_NF.first < 2) range_NF.first = 2;
+
+	// #columns has to be at least 1 for this facade.
+	if (range_NC.first < 1) range_NC.first = 1;
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定

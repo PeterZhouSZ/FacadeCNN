@@ -55,6 +55,12 @@
     <ClCompile Include="GeneratedFiles\Release\moc_ImageGenerationDialog.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="facadeE.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="facadeF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Generated Files">
@@ -146,6 +152,12 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_ImageGenerationDialog.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="facadeE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="facadeF.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

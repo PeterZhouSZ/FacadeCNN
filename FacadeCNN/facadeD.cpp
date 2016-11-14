@@ -5,8 +5,13 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::pair<int, int
 	// #floors has to be at least 3 for this facade.
 	if (range_NF.first < 3) range_NF.first = 3;
 
-	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
-	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
+	// #columns has to be at least 1 for this facade.
+	if (range_NC.first < 1) range_NC.first = 1;
+
+	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
+	if (NF < range_NF.first) NF = range_NF.first;
+	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
+	if (NC < range_NC.first) NC = range_NC.first;
 
 	float BS = (float)width / (params[12] * 2 + params[13] * NC) * params[12];
 	float TW = (float)width / (params[12] * 2 + params[13] * NC) * params[13];
@@ -60,6 +65,9 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::pair<int, int
 cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	// #floors has to be at least 3 for this facade.
 	if (range_NF.first < 3) range_NF.first = 3;
+
+	// #columns has to be at least 1 for this facade.
+	if (range_NC.first < 1) range_NC.first = 1;
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
@@ -180,7 +188,7 @@ cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::pair<in
 	DW *= ratio;
 
 	// すべてを画像のサイズにnormalize
-	ratio = (float)height / (GH + AH + FH * (NF - 1));
+	ratio = (float)height / (GH + AH + FH * (NF - 2) + FH2);
 	GH *= ratio;
 	FH *= ratio;
 	FH2 *= ratio;
@@ -274,7 +282,7 @@ cv::Mat generateFacadeD(int NF, int NC, int width, int height, int thickness, fl
 	}
 
 	// 3F以上の窓を描画
-	for (int i = 0; i < NF - 1; ++i) {
+	for (int i = 0; i < NF - 2; ++i) {
 		for (int j = 0; j < NC; ++j) {
 			int x1 = BS + TW * j + WS;
 			int y1 = height - GH - FH2 - FH * i - WB - WH;
