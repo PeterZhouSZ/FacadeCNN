@@ -4,15 +4,16 @@
 ImageGenerationDialog::ImageGenerationDialog(QWidget *parent) : QDialog(parent) {
 	ui.setupUi(this);
 
-	ui.lineEditOutputDirectory->setText("C:/Anaconda/caffe/facade/data/images");
+	//ui.lineEditOutputDirectory->setText("C:/Anaconda/caffe/facade/data/images");
+	ui.lineEditOutputDirectory->setText("//cuda.cs.purdue.edu/scratch2/facade_regression/data/images");
 	ui.lineEditNumImages->setText("10000");
 	ui.lineEditImageSize->setText("227");
 	ui.checkBoxGrayscale->setChecked(false);
 	ui.lineEditEdgeDisplacement->setText("2");
 	ui.lineEditMissingWindows->setText("10");
-	ui.lineEditNumFloorsMin->setText("4");
+	ui.lineEditNumFloorsMin->setText("1");
 	ui.lineEditNumFloorsMax->setText("20");
-	ui.lineEditNumColumnsMin->setText("4");
+	ui.lineEditNumColumnsMin->setText("1");
 	ui.lineEditNumColumnsMax->setText("20");
 
 	connect(ui.pushButtonOutputDirectory, SIGNAL(clicked()), this, SLOT(onOutputDirectory()));

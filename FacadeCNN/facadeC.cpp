@@ -1,7 +1,10 @@
 ﻿#include "facadeC.h"
 #include "Utils.h"
 
-cv::Mat generateFacadeC(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, const std::vector<float>& params) {
+cv::Mat generateFacadeC(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, const std::vector<float>& params) {
+	// #floors has to be at least 2 for this facade.
+	if (range_NF.first < 3) range_NF.first = 3;
+	
 	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
 	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
 
@@ -17,22 +20,46 @@ cv::Mat generateFacadeC(int width, int height, int thickness, const std::pair<in
 	float WT = FH / (params[3] + params[5] + params[6]) * params[5];
 	float WB = FH / (params[3] + params[5] + params[6]) * params[6];
 
-	// １Fのドアの数 [1, NC*0.8]
-	int max_ND = NC * 0.8f;
+	// １Fのドアの数 {1, NC/4, NC/3, NC/2, NC}
+	int ND_type = std::round(params[12] * 4);
+	if (ND_type < 0) ND_type = 0;
+	if (ND_type > 4) ND_type = 4;
 
-	int ND = params[12] * (max_ND - 1) + 1 + 0.5;
-	if (ND == 0) ND = 1;
-	if (ND > max_ND) ND = max_ND;
+	int ND;
+	if (ND_type == 0) {
+		ND = 1;
+	}
+	else if (ND_type == 1) {
+		ND = std::ceil((float)NC / 4);
+	}
+	else if (ND_type == 2) {
+		ND = std::ceil((float)NC / 3);
+	}
+	else if (ND_type == 3) {
+		ND = std::ceil((float)NC / 2);
+	}
+	else if (ND_type == 4) {
+		ND = NC;
+	}
 
 	float DT = GH / (params[13] + params[14]) * params[13];
 	float DH = GH / (params[13] + params[14]) * params[14];
 	float DW = TW * NC / ND / (params[15] + params[16] * 2) * params[15];
 	float DS = TW * NC / ND / (params[15] + params[16] * 2) * params[16];
 
-	return generateFacadeC(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS);
+	float TWS = TW / (params[18] + params[17] * 2) * params[17];
+	float TWW = TW / (params[18] + params[17] * 2) * params[18];
+	float TWT = AH / (params[19] + params[20] + params[21]) * params[19];
+	float TWH = AH / (params[19] + params[20] + params[21]) * params[20];
+	float TWB = AH / (params[19] + params[20] + params[21]) * params[21];
+
+	return generateFacadeC(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, TWS, TWW, TWT, TWH, TWB);
 }
 
-cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat generateRandomFacadeC(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
+	// #floors has to be at least 2 for this facade.
+	if (range_NF.first < 3) range_NF.first = 3;
+
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
 	float ratio;
@@ -40,11 +67,11 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	int NF = utils::uniform_rand(range_NF.first, range_NF.second + 1);
 	int NC = utils::uniform_rand(range_NC.first, range_NC.second + 1);
 
-	// 屋根の高さ
-	float AH = utils::uniform_rand(0, 0.5);
-
 	// 各フロアの高さ
 	float FH = utils::uniform_rand(2.5, 4);
+
+	// 最上階の高さ
+	float AH = FH + utils::uniform_rand(0, 2);
 
 	// １Fの高さ
 	float GH = FH + utils::uniform_rand(0, 2);
@@ -53,7 +80,7 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	float TW = utils::uniform_rand(2, 4);
 
 	// ビルの横マージン
-	float BS = utils::uniform_rand(0, 0.5);
+	float BS = utils::uniform_rand(0, 1);
 
 	// 各フロアの窓上部から天井までの高さ
 	float WT = utils::uniform_rand(0.2, 1);
@@ -81,6 +108,32 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	WS *= ratio;
 	WW *= ratio;
 
+	// 最上階のドア上部から天井までの高さ
+	float TWT = utils::uniform_rand(0.2, 2);
+
+	// 最上階の窓下部からフロア底面までの高さ
+	float TWB = utils::uniform_rand(0.2, 1);
+
+	// 最上階のドアの高さ
+	float TWH = utils::uniform_rand(1, 2.5);
+
+	// 最上階の各種高さをnormalize
+	ratio = AH / (TWT + TWB + TWH);
+	TWT *= ratio;
+	TWB *= ratio;
+	TWH *= ratio;
+
+	// 最上階の窓の横マージン
+	float TWS = utils::uniform_rand(0.2, 1);
+
+	// 最上階の窓の幅
+	float TWW = utils::uniform_rand(0.5, 2.5);
+
+	// 最上階の各種幅をnormalize
+	ratio = TW / (TWS * 2 + TWW);
+	TWS *= ratio;
+	TWW *= ratio;
+
 	// １Fのドア上部から天井までの高さ
 	float DT = utils::uniform_rand(0.2, 1.5);
 
@@ -92,9 +145,24 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	DT *= ratio;
 	DH *= ratio;
 
-	// １Fのドアの数 [1, NC*0.8]
-	int max_ND = NC * 0.8f;
-	int ND = utils::uniform_rand(1, max_ND + 1);
+	// １Fのドアの数 {1, NC/4, NC/3, NC/2, N}
+	int ND;
+	int ND_type = utils::uniform_rand(0, 5);
+	if (ND_type == 0) {
+		ND = 1;
+	}
+	else if (ND_type == 1) {
+		ND = std::ceil((float)NC / 4);
+	}
+	else if (ND_type == 2) {
+		ND = std::ceil((float)NC / 3);
+	}
+	else if (ND_type == 3) {
+		ND = std::ceil((float)NC / 2);
+	}
+	else if (ND_type == 4) {
+		ND = NC;
+	}
 
 	// １Fのドアの横マージン
 	float DS = utils::uniform_rand(0.2, 1);
@@ -115,6 +183,9 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	WB *= ratio;
 	WH *= ratio;
 	AH *= ratio;
+	TWT *= ratio;
+	TWH *= ratio;
+	TWB *= ratio;
 	DH *= ratio;
 	DT *= ratio;
 	ratio = (float)width / (BS * 2 + TW * NC);
@@ -122,6 +193,8 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	WS *= ratio;
 	WW *= ratio;
 	TW *= ratio;
+	TWS *= ratio;
+	TWW *= ratio;
 	DS *= ratio;
 	DW *= ratio;
 
@@ -139,16 +212,21 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, const std::p
 	params.push_back(AH / height);
 	params.push_back(FH / height);
 	params.push_back(GH / height);
-	params.push_back((float)(ND - 1) / (float)(max_ND - 1));
+	params.push_back((float)ND_type / 4);
 	params.push_back(DT / GH);
 	params.push_back(DH / GH);
 	params.push_back(DW / (DW + DS * 2));
 	params.push_back(DS / (DW + DS * 2));
+	params.push_back(TWS / TW);
+	params.push_back(TWW / TW);
+	params.push_back(TWT / AH);
+	params.push_back(TWH / AH);
+	params.push_back(TWB / AH);
 
-	return generateFacadeC(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, window_displacement, window_prob);
+	return generateFacadeC(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, ND, DT, DH, DW, DS, TWS, TWW, TWT, TWH, TWB, window_displacement, window_prob);
 }
 
-cv::Mat generateFacadeC(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, int ND, float DT, float DH, float DW, float DS, int window_displacement, float window_prob) {
+cv::Mat generateFacadeC(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, int ND, float DT, float DH, float DW, float DS, float TWS, float TWW, float TWT, float TWH, float TWB, int window_displacement, float window_prob) {
 	cv::Mat result(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
 
 	// １Fのドアを描画
@@ -188,6 +266,25 @@ cv::Mat generateFacadeC(int NF, int NC, int width, int height, int thickness, fl
 			if (utils::uniform_rand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
+		}
+	}
+
+	// 最上階の窓を描画
+	for (int j = 0; j < NC; ++j) {
+		int x1 = BS + TW * j + TWS;
+		int y1 = height - GH - FH * (NF - 2) - TWB - TWH;
+		int x2 = BS + TW * j + TWS + TWW;
+		int y2 = height - GH - FH * (NF - 2) - TWB;
+
+		if (window_displacement > 0) {
+			x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+			y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+			x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+			y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+		}
+
+		if (utils::uniform_rand() < window_prob) {
+			cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 		}
 	}
 

@@ -5,12 +5,13 @@
 #include "Regression.h"
 #include "Utils.h"
 #include "ImageGenerationDialog.h"
-#include "ParameterEstimationDialog.h"""
+#include "ParameterEstimationDialog.h"
 #include "facadeA.h"
 #include "facadeB.h"
 #include "facadeC.h"
 #include "facadeD.h"
 #include <boost/algorithm/string.hpp>
+#include <QTextStream>
 
 #ifndef SQR
 #define SQR(x)	((x) * (x))
@@ -39,7 +40,7 @@ void MainWindow::generateTrainingImages() {
 	ImageGenerationDialog dlg;
 	if (!dlg.exec()) return;
 
-	std::string DATA_ROOT = dlg.ui.lineEditOutputDirectory->text().toUtf8().constData();
+	QString DATA_ROOT = dlg.ui.lineEditOutputDirectory->text();
 	int NUM_IMAGES_PER_SNIPPET = dlg.ui.lineEditNumImages->text().toInt();
 	int IMAGE_SIZE = dlg.ui.lineEditImageSize->text().toInt();
 	bool GRAYSCALE = dlg.ui.checkBoxGrayscale->isChecked();
@@ -48,20 +49,23 @@ void MainWindow::generateTrainingImages() {
 	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
-	boost::filesystem::path dir(DATA_ROOT);
-	boost::filesystem::create_directory(dir);
+	QString dir = QString(DATA_ROOT);
+	if (QDir(dir).exists()) {
+		QDir(dir).removeRecursively();
+	}
+	QDir().mkdir(dir);
 
 	for (int facade_grammar_id = 0; facade_grammar_id < 4; ++facade_grammar_id) {
 		srand(0);
 
-		char dirname[256];
-		sprintf(dirname, (DATA_ROOT + "/%02d/").c_str(), facade_grammar_id + 1);
-		boost::filesystem::path dir(dirname);
-		boost::filesystem::create_directory(dir);
+		QString dirname = QString(DATA_ROOT + "/%1/").arg(facade_grammar_id + 1, 2, 10, QChar('0'));
+		QDir().mkdir(dirname);
 
 		int subdir_id = -1;
 
-		std::ofstream out((std::string(dirname) + "parameters.txt").c_str());
+		QFile file_param(dirname + "parameters.txt");
+		file_param.open(QIODevice::WriteOnly);
+		QTextStream out(&file_param);
 
 		printf("Grammar snippet #%d:", facade_grammar_id + 1);
 		for (int iter = 0; iter < NUM_IMAGES_PER_SNIPPET; ++iter) {
@@ -69,10 +73,9 @@ void MainWindow::generateTrainingImages() {
 
 			if (iter % 100000 == 0) {
 				subdir_id++;
-				char subdirname[256];
-				sprintf(subdirname, (std::string(dirname) + "%03d").c_str(), subdir_id);
-				boost::filesystem::path subdir(subdirname);
-				boost::filesystem::create_directory(subdir);
+
+				QString subdirname = QString(dirname + "%1/").arg(subdir_id, 6, 10, QChar('0'));
+				QDir().mkdir(subdirname);
 			}
 
 			std::vector<float> params;
@@ -84,19 +87,18 @@ void MainWindow::generateTrainingImages() {
 
 			///////////////////////////////////////////////////
 			// save the image to the file
-			char filename[256];
-			sprintf(filename, (std::string(dirname) + "%03d/%06d.png").c_str(), subdir_id, iter);
-			cv::imwrite(filename, img);
+			QString filename = QString(dirname + "%1/%2.png").arg(subdir_id, 6, 10, QChar('0')).arg(iter, 6, 10, QChar('0'));
+			cv::imwrite(filename.toUtf8().constData(), img);
 
 			for (int i = 0; i < params.size(); ++i) {
 				if (i > 0) out << ",";
 				out << params[i];
 			}
-			out << std::endl;
+			out << "\n";
 		}
 		printf("\n");
 
-		out.close();
+		file_param.close();
 	}
 	printf("\n");
 }
@@ -265,7 +267,7 @@ void MainWindow::parameterEstimation() {
 	// 誤差を計算
 	std::cout << "--------------------------------------------------" << std::endl;
 	std::cout << "Parameter estimation RMSE:" << std::endl;
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < rmse.size(); ++i) {
 		for (int j = 0; j < rmse[i].size(); ++j) {
 			if (j > 0) std::cout << ", ";
 			rmse[i][j] =  sqrt(rmse[i][j] / rmse_count[i]);

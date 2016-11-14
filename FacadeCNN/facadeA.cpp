@@ -1,7 +1,7 @@
 ﻿#include "facadeA.h"
 #include "Utils.h"
 
-cv::Mat generateFacadeA(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, const std::vector<float>& params) {
+cv::Mat generateFacadeA(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, const std::vector<float>& params) {
 	int NF = params[0] * (range_NF.second - range_NF.first) + 0.5 + range_NF.first;
 	int NC = params[1] * (range_NC.second - range_NC.first) + 0.5 + range_NC.first;
 
@@ -20,7 +20,7 @@ cv::Mat generateFacadeA(int width, int height, int thickness, const std::pair<in
 	return generateFacadeA(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH);
 }
 
-cv::Mat generateRandomFacadeA(int width, int height, int thickness, const std::pair<int, int>& range_NF, const std::pair<int, int>& range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat generateRandomFacadeA(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
 	float ratio;
@@ -41,7 +41,7 @@ cv::Mat generateRandomFacadeA(int width, int height, int thickness, const std::p
 	float TW = utils::uniform_rand(2, 4);
 
 	// ビルの横マージン
-	float BS = utils::uniform_rand(0, 0.5);
+	float BS = utils::uniform_rand(0, 1);
 
 	// 各フロアの窓上部から天井までの高さ
 	float WT = utils::uniform_rand(0.2, 1);
