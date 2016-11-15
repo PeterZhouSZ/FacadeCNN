@@ -62,7 +62,7 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	float TW = utils::uniform_rand(2, 4);
 
 	// ビルの横マージン
-	float BS = utils::uniform_rand(0, 1);
+	float BS = utils::uniform_rand(2, 4);
 
 	// 各フロアの窓上部から天井までの高さ
 	float WT = utils::uniform_rand(0.2, 1);

@@ -28,7 +28,7 @@ class Ui_MainWindowClass
 public:
     QAction *actionOpenImage;
     QAction *actionExit;
-    QAction *actionParameterEstimation;
+    QAction *actionParameterEstimationAll;
     QAction *actionNew;
     QAction *actionOpenCGA;
     QAction *actionOpenContour;
@@ -37,6 +37,7 @@ public:
     QAction *actionExtractCameraParameter;
     QAction *actionParameterEstimationWithCameraCalibration;
     QAction *actionGenerateTrainingImages;
+    QAction *actionParameterEstimation;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -53,8 +54,8 @@ public:
         actionOpenImage->setObjectName(QStringLiteral("actionOpenImage"));
         actionExit = new QAction(MainWindowClass);
         actionExit->setObjectName(QStringLiteral("actionExit"));
-        actionParameterEstimation = new QAction(MainWindowClass);
-        actionParameterEstimation->setObjectName(QStringLiteral("actionParameterEstimation"));
+        actionParameterEstimationAll = new QAction(MainWindowClass);
+        actionParameterEstimationAll->setObjectName(QStringLiteral("actionParameterEstimationAll"));
         actionNew = new QAction(MainWindowClass);
         actionNew->setObjectName(QStringLiteral("actionNew"));
         actionOpenCGA = new QAction(MainWindowClass);
@@ -71,6 +72,8 @@ public:
         actionParameterEstimationWithCameraCalibration->setObjectName(QStringLiteral("actionParameterEstimationWithCameraCalibration"));
         actionGenerateTrainingImages = new QAction(MainWindowClass);
         actionGenerateTrainingImages->setObjectName(QStringLiteral("actionGenerateTrainingImages"));
+        actionParameterEstimation = new QAction(MainWindowClass);
+        actionParameterEstimation->setObjectName(QStringLiteral("actionParameterEstimation"));
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -93,6 +96,7 @@ public:
         menuBar->addAction(menuTool->menuAction());
         menuFile->addAction(actionExit);
         menuTool->addAction(actionGenerateTrainingImages);
+        menuTool->addAction(actionParameterEstimationAll);
         menuTool->addAction(actionParameterEstimation);
 
         retranslateUi(MainWindowClass);
@@ -105,8 +109,8 @@ public:
         MainWindowClass->setWindowTitle(QApplication::translate("MainWindowClass", "Facade CNN", 0));
         actionOpenImage->setText(QApplication::translate("MainWindowClass", "Open Image", 0));
         actionExit->setText(QApplication::translate("MainWindowClass", "Exit", 0));
-        actionParameterEstimation->setText(QApplication::translate("MainWindowClass", "Parameter Estimation", 0));
-        actionParameterEstimation->setShortcut(QApplication::translate("MainWindowClass", "Ctrl+P", 0));
+        actionParameterEstimationAll->setText(QApplication::translate("MainWindowClass", "Parameter Estimation All", 0));
+        actionParameterEstimationAll->setShortcut(QApplication::translate("MainWindowClass", "Ctrl+P", 0));
         actionNew->setText(QApplication::translate("MainWindowClass", "New", 0));
         actionNew->setShortcut(QApplication::translate("MainWindowClass", "Ctrl+N", 0));
         actionOpenCGA->setText(QApplication::translate("MainWindowClass", "Open CGA", 0));
@@ -119,6 +123,7 @@ public:
         actionExtractCameraParameter->setText(QApplication::translate("MainWindowClass", "Extract Camera Parameter", 0));
         actionParameterEstimationWithCameraCalibration->setText(QApplication::translate("MainWindowClass", "Parameter Estimation with Camera Calibration", 0));
         actionGenerateTrainingImages->setText(QApplication::translate("MainWindowClass", "Generate Training Images", 0));
+        actionParameterEstimation->setText(QApplication::translate("MainWindowClass", "Parameter Estimation", 0));
         menuFile->setTitle(QApplication::translate("MainWindowClass", "File", 0));
         menuTool->setTitle(QApplication::translate("MainWindowClass", "Tool", 0));
     } // retranslateUi

@@ -34,6 +34,7 @@
      <string>Tool</string>
     </property>
     <addaction name="actionGenerateTrainingImages"/>
+    <addaction name="actionParameterEstimationAll"/>
     <addaction name="actionParameterEstimation"/>
    </widget>
    <addaction name="menuFile"/>
@@ -58,9 +59,9 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionParameterEstimation">
+  <action name="actionParameterEstimationAll">
    <property name="text">
-    <string>Parameter Estimation</string>
+    <string>Parameter Estimation All</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
@@ -116,6 +117,11 @@
   <action name="actionGenerateTrainingImages">
    <property name="text">
     <string>Generate Training Images</string>
+   </property>
+  </action>
+  <action name="actionParameterEstimation">
+   <property name="text">
+    <string>Parameter Estimation</string>
    </property>
   </action>
  </widget>
