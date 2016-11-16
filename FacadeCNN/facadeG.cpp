@@ -162,9 +162,9 @@ cv::Mat generateRandomFacadeG(int width, int height, int thickness, std::pair<in
 	params.push_back(FH / height);
 	params.push_back(BH / height);
 	params.push_back(TW2 / width);
-	params.push_back(WW2 / BS);
+	params.push_back(WW2 / TW2);
 	params.push_back(WH2 / FH);
-	params.push_back(WS2 / BS);
+	params.push_back(WS2 / TW2);
 	params.push_back(WT2 / FH);
 	params.push_back(WB2 / FH);
 

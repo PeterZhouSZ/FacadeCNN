@@ -5,8 +5,8 @@ cv::Mat generateFacadeH(int width, int height, int thickness, std::pair<int, int
 	// #floors has to be at least 1 for this facade.
 	if (range_NF.first < 1) range_NF.first = 1;
 
-	// #columns has to be at least 3 for this facade.
-	if (range_NC.first < 3) range_NC.first = 3;
+	// #columns has to be at least 6 for this facade.
+	if (range_NC.first < 6) range_NC.first = 6;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
@@ -40,8 +40,8 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	// #floors has to be at least 1 for this facade.
 	if (range_NF.first < 1) range_NF.first = 1;
 
-	// #columns has to be at least 3 for this facade.
-	if (range_NC.first < 3) range_NC.first = 3;
+	// #columns has to be at least 6 for this facade.
+	if (range_NC.first < 6) range_NC.first = 6;
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータを設定
@@ -65,11 +65,11 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 
 	// 各タイルの幅
 	float TW2;
-	if (utils::uniform_rand() < 0.5) {
-		TW2 = utils::uniform_rand(1, TW);
+	if (utils::uniform_rand() < 0.5 && TW * 0.5 > 0.8) {
+		TW2 = utils::uniform_rand(0.8, TW * 0.5);
 	}
 	else {
-		TW2 = utils::uniform_rand(TW, 6);
+		TW2 = utils::uniform_rand(TW * 2, TW * 3);
 	}
 
 	// ビルの横マージン

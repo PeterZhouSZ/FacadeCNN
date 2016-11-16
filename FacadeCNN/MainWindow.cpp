@@ -13,6 +13,7 @@
 #include "facadeE.h"
 #include "facadeF.h"
 #include "facadeG.h"
+#include "facadeH.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QTextStream>
@@ -45,7 +46,7 @@ void MainWindow::generateTrainingImages() {
 	ImageGenerationDialog dlg;
 	if (!dlg.exec()) return;
 
-	int NUM_GRAMMARS = 7;
+	int NUM_GRAMMARS = 8;
 
 	QString DATA_ROOT = dlg.ui.lineEditOutputDirectory->text();
 	int NUM_IMAGES_PER_SNIPPET = dlg.ui.lineEditNumImages->text().toInt();
@@ -136,6 +137,9 @@ cv::Mat MainWindow::generateFacadeStructure(int facade_grammar_id, int width, in
 	else if (facade_grammar_id == 6) {
 		result = generateRandomFacadeG(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
+	else if (facade_grammar_id == 7) {
+		result = generateRandomFacadeH(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
+	}
 
 	return result;
 }
@@ -144,7 +148,7 @@ void MainWindow::parameterEstimationAll() {
 	ParameterEstimationDialog dlg;
 	if (!dlg.exec()) return;
 
-	int NUM_GRAMMARS = 6;
+	int NUM_GRAMMARS = 8;
 
 	QString results_dir = dlg.ui.lineEditOutputDirectory->text() + "/";
 	if (QDir(results_dir).exists()) {
@@ -165,9 +169,6 @@ void MainWindow::parameterEstimationAll() {
 	for (int i = 0; i < NUM_GRAMMARS; ++i) {
 		QString deploy_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/deploy_%1.prototxt").arg(i + 1, 2, 10, QChar('0'));
 		QString model_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/train_%1_iter_40000.caffemodel").arg(i + 1, 2, 10, QChar('0'));
-		std::cout << "Parameter estimation CNN #" << i + 1 << ":" << std::endl;
-		std::cout << "   - " << deploy_name.toUtf8().constData() << std::endl;
-		std::cout << "   - " << model_name.toUtf8().constData() << std::endl;
 		regressions[i] = boost::shared_ptr<Regression>(new Regression(deploy_name.toUtf8().constData(), model_name.toUtf8().constData()));
 	}
 	std::cout << "Parameter estimation CNNs were successfully loaded." << std::endl;
@@ -282,6 +283,9 @@ void MainWindow::parameterEstimationAll() {
 		else if (predictions[0].first == 6) {
 			predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
+		else if (predictions[0].first == 7) {
+			predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		}
 
 		// make the predicted image blue
 		for (int r = 0; r < predicted_img.rows; ++r) {
@@ -327,7 +331,7 @@ void MainWindow::parameterEstimationAll() {
 }
 
 void MainWindow::onParameterEstimation() {
-	int NUM_GRAMMARS = 4;
+	int NUM_GRAMMARS = 8;
 	std::pair<int, int> range_NF = std::make_pair(1, 20);
 	std::pair<int, int> range_NC = std::make_pair(1, 20);
 
@@ -351,8 +355,9 @@ void MainWindow::onParameterEstimation() {
 	regressions[3] = boost::shared_ptr<Regression>(new Regression("models/deploy_04.prototxt", "models/train_04_iter_40000.caffemodel"));
 	regressions[4] = boost::shared_ptr<Regression>(new Regression("models/deploy_05.prototxt", "models/train_05_iter_40000.caffemodel"));
 	regressions[5] = boost::shared_ptr<Regression>(new Regression("models/deploy_06.prototxt", "models/train_06_iter_40000.caffemodel"));
-	//regressions[6] = boost::shared_ptr<Regression>(new Regression("models/deploy_07.prototxt", "models/train_07_iter_40000.caffemodel"));
-	
+	regressions[6] = boost::shared_ptr<Regression>(new Regression("models/deploy_07.prototxt", "models/train_07_iter_40000.caffemodel"));
+	regressions[7] = boost::shared_ptr<Regression>(new Regression("models/deploy_08.prototxt", "models/train_08_iter_40000.caffemodel"));
+
 	// classification
 	std::vector<Prediction> predictions = classifier.Classify(input_img, NUM_GRAMMARS);
 
@@ -378,6 +383,12 @@ void MainWindow::onParameterEstimation() {
 	}
 	else if (predictions[0].first == 5) {
 		predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+	}
+	else if (predictions[0].first == 6) {
+		predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+	}
+	else if (predictions[0].first == 7) {
+		predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
 
 	// make the predicted image blue
