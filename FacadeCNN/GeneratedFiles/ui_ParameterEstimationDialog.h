@@ -13,6 +13,7 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
@@ -46,21 +47,22 @@ public:
     QLineEdit *lineEditNumColumnsMax;
     QLineEdit *lineEditNumColumnsMin;
     QLabel *label_21;
+    QCheckBox *checkBoxUseTrueGrammarId;
 
     void setupUi(QDialog *ParameterEstimationDialog)
     {
         if (ParameterEstimationDialog->objectName().isEmpty())
             ParameterEstimationDialog->setObjectName(QStringLiteral("ParameterEstimationDialog"));
-        ParameterEstimationDialog->resize(522, 232);
+        ParameterEstimationDialog->resize(522, 260);
         lineEditTestDataDirectory = new QLineEdit(ParameterEstimationDialog);
         lineEditTestDataDirectory->setObjectName(QStringLiteral("lineEditTestDataDirectory"));
         lineEditTestDataDirectory->setGeometry(QRect(130, 10, 341, 20));
         pushButtonCancel = new QPushButton(ParameterEstimationDialog);
         pushButtonCancel->setObjectName(QStringLiteral("pushButtonCancel"));
-        pushButtonCancel->setGeometry(QRect(410, 190, 91, 31));
+        pushButtonCancel->setGeometry(QRect(410, 220, 91, 31));
         pushButtonOK = new QPushButton(ParameterEstimationDialog);
         pushButtonOK->setObjectName(QStringLiteral("pushButtonOK"));
-        pushButtonOK->setGeometry(QRect(310, 190, 91, 31));
+        pushButtonOK->setGeometry(QRect(310, 220, 91, 31));
         label_12 = new QLabel(ParameterEstimationDialog);
         label_12->setObjectName(QStringLiteral("label_12"));
         label_12->setGeometry(QRect(10, 40, 121, 20));
@@ -120,6 +122,9 @@ public:
         label_21 = new QLabel(ParameterEstimationDialog);
         label_21->setObjectName(QStringLiteral("label_21"));
         label_21->setGeometry(QRect(186, 160, 16, 20));
+        checkBoxUseTrueGrammarId = new QCheckBox(ParameterEstimationDialog);
+        checkBoxUseTrueGrammarId->setObjectName(QStringLiteral("checkBoxUseTrueGrammarId"));
+        checkBoxUseTrueGrammarId->setGeometry(QRect(10, 190, 251, 17));
         QWidget::setTabOrder(lineEditTestDataDirectory, pushButtonOK);
         QWidget::setTabOrder(pushButtonOK, pushButtonCancel);
 
@@ -145,6 +150,7 @@ public:
         label_19->setText(QApplication::translate("ParameterEstimationDialog", "~", 0));
         label_20->setText(QApplication::translate("ParameterEstimationDialog", "#columns:", 0));
         label_21->setText(QApplication::translate("ParameterEstimationDialog", "~", 0));
+        checkBoxUseTrueGrammarId->setText(QApplication::translate("ParameterEstimationDialog", "Use true grammar id for parameter estimation", 0));
     } // retranslateUi
 
 };

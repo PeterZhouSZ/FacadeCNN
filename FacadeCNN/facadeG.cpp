@@ -1,7 +1,7 @@
-﻿#include "facadeF.h"
+﻿#include "facadeG.h"
 #include "Utils.h"
 
-cv::Mat generateFacadeF(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, const std::vector<float>& params) {
+cv::Mat generateFacadeG(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, const std::vector<float>& params) {
 	// #floors has to be at least 1 for this facade.
 	if (range_NF.first < 1) range_NF.first = 1;
 
@@ -12,9 +12,11 @@ cv::Mat generateFacadeF(int width, int height, int thickness, std::pair<int, int
 	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
 	if (NC < range_NC.first) NC = range_NC.first;
+	if ((NC - 1) % 2 != 0) NC--;
 
-	float BS = (float)width / (params[7] * 2 + params[8] * (NC - 2)) * params[7];
-	float TW = (float)width / (params[7] * 2 + params[8] * (NC - 2)) * params[8];
+	float BS = (float)width / (params[7] * 2 + params[8] * (NC - 1) + params[12]) * params[7];
+	float TW = (float)width / (params[7] * 2 + params[8] * (NC - 1) + params[12]) * params[8];
+	float TW2 = (float)width / (params[7] * 2 + params[8] * (NC - 1) + params[12]) * params[12];
 	float AH = (float)height / (params[9] + params[10] * NF + params[11]) * params[9];
 	float FH = (float)height / (params[9] + params[10] * NF + params[11]) * params[10];
 	float BH = (float)height / (params[9] + params[10] * NF + params[11]) * params[11];
@@ -25,17 +27,16 @@ cv::Mat generateFacadeF(int width, int height, int thickness, std::pair<int, int
 	float WT = FH / (params[3] + params[5] + params[6]) * params[5];
 	float WB = FH / (params[3] + params[5] + params[6]) * params[6];
 
-	float WW2 = BS / (params[12] + params[14] + params[15]) * params[12];
-	float WO2 = BS / (params[12] + params[14] + params[15]) * params[14];
-	float WI2 = BS / (params[12] + params[14] + params[15]) * params[15];
-	float WH2 = FH / (params[13] + params[16] + params[17]) * params[13];
-	float WT2 = FH / (params[13] + params[16] + params[17]) * params[16];
-	float WB2 = FH / (params[13] + params[16] + params[17]) * params[17];
+	float WW2 = TW2 / (params[13] + params[15] *2) * params[13];
+	float WS2 = TW2 / (params[13] + params[15] * 2) * params[15];
+	float WH2 = FH / (params[14] + params[16] + params[17]) * params[14];
+	float WT2 = FH / (params[14] + params[16] + params[17]) * params[16];
+	float WB2 = FH / (params[14] + params[16] + params[17]) * params[17];
 
-	return generateFacadeF(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, WW2, WH2, WO2, WI2, WT2, WB2);
+	return generateFacadeG(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, TW2, WW2, WH2, WS2, WT2, WB2);
 }
 
-cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
+cv::Mat generateRandomFacadeG(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	// #floors has to be at least 1 for this facade.
 	if (range_NF.first < 1) range_NF.first = 1;
 
@@ -48,6 +49,7 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 
 	int NF = utils::uniform_rand(range_NF.first, range_NF.second + 1);
 	int NC = utils::uniform_rand(range_NC.first, range_NC.second + 1);
+	if ((NC - 1) % 2 != 0) NC--;
 
 	// ベースの高さ
 	float BH = utils::uniform_rand(0, 0.5);
@@ -61,14 +63,11 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	// 各タイルの幅
 	float TW = utils::uniform_rand(2, 4);
 
+	// 各タイルの幅
+	float TW2 = utils::uniform_rand(2, 6);
+
 	// ビルの横マージン
-	float BS;
-	if (utils::uniform_rand() < 0.5) {
-		BS = utils::uniform_rand(TW * 0.2, TW * 0.7);
-	}
-	else {
-		BS = utils::uniform_rand(TW * 1.3, TW * 3);
-	}
+	float BS = utils::uniform_rand(0, 1);
 
 	// 各フロアの窓上部から天井までの高さ
 	float WT = utils::uniform_rand(0.2, 1);
@@ -85,16 +84,16 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WB *= ratio;
 	WH *= ratio;
 
-	// 左・右端の窓上部から天井までの高さ
+	// 中央の窓上部から天井までの高さ
 	float WT2 = utils::uniform_rand(0.2, 1);
 
-	// 左・右端の窓下部からフロア底面までの高さ
+	// 中央の窓下部からフロア底面までの高さ
 	float WB2 = utils::uniform_rand(0.2, 1);
 
-	// 左・右端の窓の高さ
+	// 中央の窓の高さ
 	float WH2 = utils::uniform_rand(1, 2.5);
 
-	// 左・右端の各種高さをnormalize
+	// 中央の各種高さをnormalize
 	ratio = FH / (WT2 + WB2 + WH2);
 	WT2 *= ratio;
 	WB2 *= ratio;
@@ -111,18 +110,22 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WS *= ratio;
 	WW *= ratio;
 
-	// 左・右端の窓の横のマージン
-	float WO2 = utils::uniform_rand(0.2, 1);
-	float WI2 = utils::uniform_rand(0.2, 1);
+	// 中央の窓の横のマージン
+	float WS2 = utils::uniform_rand(0.2, 1);
 
-	// 左・右端の窓の幅
-	float WW2 = utils::uniform_rand(0.5, 2.5);
+	// 中央の窓の幅
+	float WW2;
+	if (utils::uniform_rand() < 0.5) {
+		WW2 = utils::uniform_rand(WW * 0.2, WW * 0.7);
+	}
+	else {
+		WW2 = utils::uniform_rand(WW * 1.3, WW * 3);
+	}
 
-	// 左・右端の各種幅をnormalize
-	ratio = BS / (WO2 + WW2 + WI2);
-	WO2 *= ratio;
+	// 中央の各種幅をnormalize
+	ratio = TW2 / (WS2 * 2 + WW2);
+	WS2 *= ratio;
 	WW2 *= ratio;
-	WI2 *= ratio;
 
 	// すべてを画像のサイズにnormalize
 	ratio = (float)height / (BH + AH + FH * NF);
@@ -135,14 +138,14 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WH2 *= ratio;
 	WB2 *= ratio;
 	AH *= ratio;
-	ratio = (float)width / (BS * 2 + TW * (NC - 2));
+	ratio = (float)width / (BS * 2 + TW * (NC - 1) + TW2);
 	BS *= ratio;
 	WS *= ratio;
 	WW *= ratio;
 	TW *= ratio;
-	WO2 *= ratio;
+	TW2 *= ratio;
+	WS2 *= ratio;
 	WW2 *= ratio;
-	WI2 *= ratio;
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// パラメータ値を格納
@@ -158,44 +161,26 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	params.push_back(AH / height);
 	params.push_back(FH / height);
 	params.push_back(BH / height);
+	params.push_back(TW2 / width);
 	params.push_back(WW2 / BS);
 	params.push_back(WH2 / FH);
-	params.push_back(WO2 / BS);
-	params.push_back(WI2 / BS);
+	params.push_back(WS2 / BS);
 	params.push_back(WT2 / FH);
 	params.push_back(WB2 / FH);
 
-	return generateFacadeF(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, WW2, WH2, WO2, WI2, WT2, WB2, window_displacement, window_prob);
+	return generateFacadeG(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, BH, TW2, WW2, WH2, WS2, WT2, WB2, window_displacement, window_prob);
 }
 
-cv::Mat generateFacadeF(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float BH, float WW2, float WH2, float WO2, float WI2, float WT2, float WB2, int window_displacement, float window_prob) {
+cv::Mat generateFacadeG(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float BH, float TW2, float WW2, float WH2, float WS2, float WT2, float WB2, int window_displacement, float window_prob) {
 	cv::Mat result(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
 
 	// 窓を描画
 	for (int i = 0; i < NF; ++i) {
-		// 左端
-		{
-			int x1 = WO2;
-			int y1 = height - BH - FH * i - WB2 - WH2;
-			int x2 = WO2 + WW2;
-			int y2 = height - BH - FH * i - WB2;
-
-			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-			}
-
-			if (utils::uniform_rand() < window_prob) {
-				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
-			}
-		}
-
-		for (int j = 0; j < NC - 2; ++j) {
+		// 左半分
+		for (int j = 0; j < (NC - 1) / 2; ++j) {
 			int x1 = BS + TW * j + WS;
 			int y1 = height - BH - FH * i - WB - WH;
-			int x2 = BS + (WS * 2 + WW) * j + WS + WW;
+			int x2 = BS + TW * j + WS + WW;
 			int y2 = height - BH - FH * i - WB;
 
 			if (window_displacement > 0) {
@@ -210,12 +195,31 @@ cv::Mat generateFacadeF(int NF, int NC, int width, int height, int thickness, fl
 			}
 		}
 
-		// 右端
+		// 中央
 		{
-			int x1 = BS + TW * (NC - 2) + WI2;
+			int x1 = BS + TW * (NC - 1) / 2 + WS2;
 			int y1 = height - BH - FH * i - WB2 - WH2;
-			int x2 = BS + TW * (NC - 2) + WI2 + WW2;
+			int x2 = BS + TW * (NC - 1) / 2 + WS2 + WW2;
 			int y2 = height - BH - FH * i - WB2;
+
+			if (window_displacement > 0) {
+				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+			}
+
+			if (utils::uniform_rand() < window_prob) {
+				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
+			}
+		}
+
+		// 右半分
+		for (int j = 0; j < (NC - 1) / 2; ++j) {
+			int x1 = BS + TW * (NC - 1) / 2 + TW2 + TW * j + WS;
+			int y1 = height - BH - FH * i - WB - WH;
+			int x2 = BS + TW * (NC - 1) / 2 + TW2 + TW * j + WS + WW;
+			int y2 = height - BH - FH * i - WB;
 
 			if (window_displacement > 0) {
 				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);

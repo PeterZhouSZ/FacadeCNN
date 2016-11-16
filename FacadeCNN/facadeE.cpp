@@ -3,7 +3,7 @@
 
 cv::Mat generateFacadeE(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, const std::vector<float>& params) {
 	// #floors has to be at least 4 for this facade.
-	if (range_NF.first < 4) range_NF.first = 4;
+	if (range_NF.first < 5) range_NF.first = 5;
 
 	// #columns has to be at least 1 for this facade.
 	if (range_NC.first < 1) range_NC.first = 1;
@@ -70,7 +70,7 @@ cv::Mat generateFacadeE(int width, int height, int thickness, std::pair<int, int
 
 cv::Mat generateRandomFacadeE(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
 	// #floors has to be at least 4 for this facade.
-	if (range_NF.first < 4) range_NF.first = 4;
+	if (range_NF.first < 5) range_NF.first = 5;
 
 	// #columns has to be at least 1 for this facade.
 	if (range_NC.first < 1) range_NC.first = 1;

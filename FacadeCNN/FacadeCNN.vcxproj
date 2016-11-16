@@ -213,6 +213,8 @@
     <ClCompile Include="facadeD.cpp" />
     <ClCompile Include="facadeE.cpp" />
     <ClCompile Include="facadeF.cpp" />
+    <ClCompile Include="facadeG.cpp" />
+    <ClCompile Include="facadeH.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_ImageGenerationDialog.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -333,6 +335,8 @@
     <ClInclude Include="facadeD.h" />
     <ClInclude Include="facadeE.h" />
     <ClInclude Include="facadeF.h" />
+    <ClInclude Include="facadeG.h" />
+    <ClInclude Include="facadeH.h" />
     <ClInclude Include="GeneratedFiles\ui_ImageGenerationDialog.h" />
     <ClInclude Include="GeneratedFiles\ui_ParameterEstimationDialog.h" />
     <CustomBuild Include="ImageGenerationDialog.h">

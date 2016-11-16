@@ -61,6 +61,12 @@
     <ClCompile Include="facadeF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="facadeG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="facadeH.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Generated Files">
@@ -157,6 +163,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="facadeF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="facadeG.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="facadeH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

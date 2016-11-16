@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>522</width>
-    <height>232</height>
+    <height>260</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>190</y>
+     <y>220</y>
      <width>91</width>
      <height>31</height>
     </rect>
@@ -40,7 +40,7 @@
    <property name="geometry">
     <rect>
      <x>310</x>
-     <y>190</y>
+     <y>220</y>
      <width>91</width>
      <height>31</height>
     </rect>
@@ -279,6 +279,19 @@
    </property>
    <property name="text">
     <string>~</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBoxUseTrueGrammarId">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>190</y>
+     <width>251</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Use true grammar id for parameter estimation</string>
    </property>
   </widget>
  </widget>

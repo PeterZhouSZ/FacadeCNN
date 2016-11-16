@@ -12,6 +12,7 @@
 #include "facadeD.h"
 #include "facadeE.h"
 #include "facadeF.h"
+#include "facadeG.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QTextStream>
@@ -44,7 +45,7 @@ void MainWindow::generateTrainingImages() {
 	ImageGenerationDialog dlg;
 	if (!dlg.exec()) return;
 
-	int NUM_GRAMMARS = 6;
+	int NUM_GRAMMARS = 7;
 
 	QString DATA_ROOT = dlg.ui.lineEditOutputDirectory->text();
 	int NUM_IMAGES_PER_SNIPPET = dlg.ui.lineEditNumImages->text().toInt();
@@ -132,6 +133,9 @@ cv::Mat MainWindow::generateFacadeStructure(int facade_grammar_id, int width, in
 	else if (facade_grammar_id == 5) {
 		result = generateRandomFacadeF(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
 	}
+	else if (facade_grammar_id == 6) {
+		result = generateRandomFacadeG(width, height, thickness, range_NF, range_NC, params, window_displacement, window_prob);
+	}
 
 	return result;
 }
@@ -140,7 +144,7 @@ void MainWindow::parameterEstimationAll() {
 	ParameterEstimationDialog dlg;
 	if (!dlg.exec()) return;
 
-	int NUM_GRAMMARS = 4;
+	int NUM_GRAMMARS = 6;
 
 	QString results_dir = dlg.ui.lineEditOutputDirectory->text() + "/";
 	if (QDir(results_dir).exists()) {
@@ -155,12 +159,18 @@ void MainWindow::parameterEstimationAll() {
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
 	Classifier classifier((dlg.ui.lineEditClassificationDirectory->text() + "/model/deploy.prototxt").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/model/train_iter_40000.caffemodel").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/data/mean.binaryproto").toUtf8().constData());
-	std::vector<boost::shared_ptr<Regression>> regressions(4);
+	std::cout << "Recognition CNN was successfully loaded." << std::endl;
+
+	std::vector<boost::shared_ptr<Regression>> regressions(NUM_GRAMMARS);
 	for (int i = 0; i < NUM_GRAMMARS; ++i) {
 		QString deploy_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/deploy_%1.prototxt").arg(i + 1, 2, 10, QChar('0'));
 		QString model_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/train_%1_iter_40000.caffemodel").arg(i + 1, 2, 10, QChar('0'));
+		std::cout << "Parameter estimation CNN #" << i + 1 << ":" << std::endl;
+		std::cout << "   - " << deploy_name.toUtf8().constData() << std::endl;
+		std::cout << "   - " << model_name.toUtf8().constData() << std::endl;
 		regressions[i] = boost::shared_ptr<Regression>(new Regression(deploy_name.toUtf8().constData(), model_name.toUtf8().constData()));
 	}
+	std::cout << "Parameter estimation CNNs were successfully loaded." << std::endl;
 
 	int correct_classification = 0;
 	int incorrect_classification = 0;
@@ -198,7 +208,10 @@ void MainWindow::parameterEstimationAll() {
 	file.open(QIODevice::ReadOnly);
 	QTextStream in(&file);
 	int iter = 0;
+	printf("Predicting: ");
 	while (true) {
+		printf("\rPredicting: %d", iter + 1);
+
 		QString line = in.readLine();
 		QStringList list = line.split(" ");
 		if (list.size() < 2) break;
@@ -206,6 +219,11 @@ void MainWindow::parameterEstimationAll() {
 		QString file_path = list[0];
 		int grammar_id = list[1].toInt();
 		if (grammar_id >= NUM_GRAMMARS) continue;
+
+		// obtain file id
+		int index1 = file_path.lastIndexOf("/");
+		int index2 = file_path.indexOf(".", index1);
+		int file_id = file_path.mid(index1 + 1, index2 - index1 - 1).toInt();
 
 		// read the test image
 		cv::Mat img = cv::imread((dlg.ui.lineEditTestDataDirectory->text() + "/images/" + file_path).toUtf8().constData());
@@ -218,21 +236,15 @@ void MainWindow::parameterEstimationAll() {
 		if (predictions[0].first == grammar_id) correct_classification++;
 		else incorrect_classification++;
 
+		if (dlg.ui.checkBoxUseTrueGrammarId->isChecked()) {
+			// パラメータ推定のために、正しいgrammar_idを使用する
+			predictions[0].first = grammar_id;
+		}
+
+		if (predictions[0].first >= NUM_GRAMMARS) continue;
+
 		// parameter estimation
 		std::vector<float> predicted_params = regressions[predictions[0].first]->Predict(img);
-
-		// obtain file id
-		int index1 = file_path.lastIndexOf("/");
-		int index2 = file_path.indexOf(".", index1);
-		int file_id = file_path.mid(index1 + 1, index2 - index1 - 1).toInt();
-
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		// パラメータ推定のために、正しいgrammar_idを使用する
-
-		//predictions[0].first = grammar_id;
-		//std::cout << file_path.toUtf8().constData() << ": " << grammar_id << " -> " << predictions[0].first << std::endl;
-		////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// 誤差を計算
 		if (predictions[0].first == grammar_id) {
@@ -267,6 +279,9 @@ void MainWindow::parameterEstimationAll() {
 		else if (predictions[0].first == 5) {
 			predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 		}
+		else if (predictions[0].first == 6) {
+			predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		}
 
 		// make the predicted image blue
 		for (int r = 0; r < predicted_img.rows; ++r) {
@@ -291,6 +306,7 @@ void MainWindow::parameterEstimationAll() {
 
 		iter++;
 	}
+	printf("\n");
 
 	std::cout << "--------------------------------------------------" << std::endl;
 	std::cout << "Classification accuracy: " << (float)correct_classification / (correct_classification + incorrect_classification) << std::endl;
@@ -300,10 +316,11 @@ void MainWindow::parameterEstimationAll() {
 	std::cout << "--------------------------------------------------" << std::endl;
 	std::cout << "Parameter estimation RMSE:" << std::endl;
 	for (int i = 0; i < rmse.size(); ++i) {
+		std::cout << "Grammar #" << i + 1 << ":" << std::endl;
 		for (int j = 0; j < rmse[i].size(); ++j) {
 			if (j > 0) std::cout << ", ";
 			rmse[i][j] =  sqrt(rmse[i][j] / rmse_count[i]);
-			std::cout << rmse[i][j];
+			std::cout << std::setprecision(5) << rmse[i][j];
 		}
 		std::cout << std::endl;
 	}
@@ -316,10 +333,14 @@ void MainWindow::onParameterEstimation() {
 
 	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
 	if (filename.isEmpty()) return;
-
 	cv::Mat img = cv::imread(filename.toUtf8().constData());
+
+	QString filename2 = QFileDialog::getOpenFileName(this, tr("Open Window Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
+	if (filename2.isEmpty()) return;
+	cv::Mat win_img = cv::imread(filename2.toUtf8().constData());
+	
 	cv::Mat input_img;
-	cv::resize(img, input_img, cv::Size(227, 227));
+	cv::resize(win_img, input_img, cv::Size(227, 227));
 	cv::threshold(input_img, input_img, 250, 255, cv::THRESH_BINARY);
 
 	Classifier classifier("models/deploy.prototxt", "models/train_iter_40000.caffemodel", "models/mean.binaryproto");
@@ -328,7 +349,10 @@ void MainWindow::onParameterEstimation() {
 	regressions[1] = boost::shared_ptr<Regression>(new Regression("models/deploy_02.prototxt", "models/train_02_iter_40000.caffemodel"));
 	regressions[2] = boost::shared_ptr<Regression>(new Regression("models/deploy_03.prototxt", "models/train_03_iter_40000.caffemodel"));
 	regressions[3] = boost::shared_ptr<Regression>(new Regression("models/deploy_04.prototxt", "models/train_04_iter_40000.caffemodel"));
-
+	regressions[4] = boost::shared_ptr<Regression>(new Regression("models/deploy_05.prototxt", "models/train_05_iter_40000.caffemodel"));
+	regressions[5] = boost::shared_ptr<Regression>(new Regression("models/deploy_06.prototxt", "models/train_06_iter_40000.caffemodel"));
+	//regressions[6] = boost::shared_ptr<Regression>(new Regression("models/deploy_07.prototxt", "models/train_07_iter_40000.caffemodel"));
+	
 	// classification
 	std::vector<Prediction> predictions = classifier.Classify(input_img, NUM_GRAMMARS);
 

@@ -15,6 +15,7 @@ ParameterEstimationDialog::ParameterEstimationDialog(QWidget *parent) : QDialog(
 	ui.lineEditNumFloorsMax->setText("20");
 	ui.lineEditNumColumnsMin->setText("1");
 	ui.lineEditNumColumnsMax->setText("20");
+	ui.checkBoxUseTrueGrammarId->setChecked(true);
 
 	connect(ui.pushButtonTestDataDirectory, SIGNAL(clicked()), this, SLOT(onTestDataDirectory()));
 	connect(ui.pushButtonClassificationDirectory, SIGNAL(clicked()), this, SLOT(onClassificationDirectory()));
