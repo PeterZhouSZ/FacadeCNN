@@ -324,7 +324,7 @@ void MainWindow::parameterEstimationAll() {
 		for (int j = 0; j < rmse[i].size(); ++j) {
 			if (j > 0) std::cout << ", ";
 			rmse[i][j] =  sqrt(rmse[i][j] / rmse_count[i]);
-			std::cout << std::setprecision(5) << rmse[i][j];
+			std::cout << std::setprecision(4) << rmse[i][j];
 		}
 		std::cout << std::endl;
 	}
