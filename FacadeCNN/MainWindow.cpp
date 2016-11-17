@@ -162,13 +162,13 @@ void MainWindow::parameterEstimationAll() {
 	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
-	Classifier classifier((dlg.ui.lineEditClassificationDirectory->text() + "/model/deploy.prototxt").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/model/train_iter_40000.caffemodel").toUtf8().constData(), (dlg.ui.lineEditClassificationDirectory->text() + "/data/mean.binaryproto").toUtf8().constData());
+	Classifier classifier("models/deploy.prototxt", "models/train_iter_40000.caffemodel", "models/mean.binaryproto");
 	std::cout << "Recognition CNN was successfully loaded." << std::endl;
 
 	std::vector<boost::shared_ptr<Regression>> regressions(NUM_GRAMMARS);
 	for (int i = 0; i < NUM_GRAMMARS; ++i) {
-		QString deploy_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/deploy_%1.prototxt").arg(i + 1, 2, 10, QChar('0'));
-		QString model_name = dlg.ui.lineEditRegressionDirectory->text() + QString("/model/train_%1_iter_40000.caffemodel").arg(i + 1, 2, 10, QChar('0'));
+		QString deploy_name = QString("models/deploy_%1.prototxt").arg(i + 1, 2, 10, QChar('0'));
+		QString model_name = QString("models/train_%1_iter_40000.caffemodel").arg(i + 1, 2, 10, QChar('0'));
 		regressions[i] = boost::shared_ptr<Regression>(new Regression(deploy_name.toUtf8().constData(), model_name.toUtf8().constData()));
 	}
 	std::cout << "Parameter estimation CNNs were successfully loaded." << std::endl;
@@ -301,11 +301,11 @@ void MainWindow::parameterEstimationAll() {
 		}
 
 		char filename2[256];
-		sprintf(filename2, (dlg.ui.lineEditOutputDirectory->text() + "/%02d_%06d_input.png").toUtf8().constData(), grammar_id + 1, iter);
+		sprintf(filename2, (results_dir + "%02d_%06d_input.png").toUtf8().constData(), grammar_id + 1, iter);
 		cv::imwrite(filename2, img);
 
 		char filename[256];
-		sprintf(filename, (dlg.ui.lineEditOutputDirectory->text() + "/%02d_%06d_pred.png").toUtf8().constData(), grammar_id + 1, iter);
+		sprintf(filename, (results_dir + "%02d_%06d_pred.png").toUtf8().constData(), grammar_id + 1, iter);
 		cv::imwrite(filename, predicted_img);
 
 		iter++;

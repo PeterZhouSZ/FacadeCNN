@@ -14,8 +14,6 @@ public:
 
 public slots:
 	void onTestDataDirectory();
-	void onClassificationDirectory();
-	void onRegressionDirectory();
 	void onOutputDirectory();
 	void onOK();
 	void onCancel();
