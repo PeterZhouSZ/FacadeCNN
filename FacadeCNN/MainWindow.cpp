@@ -360,9 +360,11 @@ void MainWindow::onParameterEstimation() {
 
 	// classification
 	std::vector<Prediction> predictions = classifier.Classify(input_img, NUM_GRAMMARS);
+	std::cout << "grammar: " << predictions[0].first << std::endl;
 
 	// parameter estimation
 	std::vector<float> predicted_params = regressions[predictions[0].first]->Predict(input_img);
+	utils::output_vector(predicted_params);
 
 	// predictされた画像を作成する
 	cv::Mat predicted_img;

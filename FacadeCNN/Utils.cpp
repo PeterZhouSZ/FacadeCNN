@@ -40,4 +40,12 @@ namespace utils {
 		}
 	}
 
+	void output_vector(const std::vector<float>& values) {
+		for (int i = 0; i < values.size(); ++i) {
+			if (i > 0) std::cout << ", ";
+			std::cout << values[i];
+		}
+		std::cout << std::endl;
+	}
+
 }

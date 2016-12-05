@@ -10,4 +10,6 @@ namespace utils {
 
 	void drawLine(cv::Mat& img, cv::Point p1, cv::Point p2, float edge_prob, int noise_amount, const cv::Scalar& color, int thickness);
 	void drawRectangle(cv::Mat& img, cv::Point p1, cv::Point p2, float edge_prob, int noise_amount, const cv::Scalar& color, int thickness);
+
+	void output_vector(const std::vector<float>& values);
 }
