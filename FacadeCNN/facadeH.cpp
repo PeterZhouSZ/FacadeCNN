@@ -416,3 +416,11 @@ cv::Mat generateFacadeH(float scale, int NF, int NC, int width, int height, int 
 
 	return result;
 }
+
+void clusterWindowTypesH(std::vector<std::vector<fs::WindowPos>>& win_rects) {
+	for (int i = 0; i < win_rects.size(); ++i) {
+		for (int j = 0; j < win_rects[i].size(); ++j) {
+			if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+		}
+	}
+}

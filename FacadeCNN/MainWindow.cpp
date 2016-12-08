@@ -452,94 +452,28 @@ void MainWindow::onParameterEstimation() {
 
 	// cluster the tiles based on the grammar
 	if (facade_id == 0) {
-		for (int i = 0; i < win_rects.size(); ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
-			}
-		}
+		clusterWindowTypesA(win_rects);
 	}
 	else if (facade_id == 1) {
-		for (int i = 0; i < win_rects.size() - 1; ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
-			}
-		}
-		for (int j = 0; j < win_rects.back().size(); ++j) {
-			if (win_rects.back()[j].valid) win_rects.back()[j].type = 1;
-		}
+		clusterWindowTypesB(win_rects);
 	}
 	else if (facade_id == 2) {
-		for (int j = 0; j < win_rects[0].size(); ++j) {
-			if (win_rects[0][j].valid) win_rects[0][j].type = 0;
-		}
-		for (int i = 1; i < win_rects.size() - 1; ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
-			}
-		}
-		for (int j = 0; j < win_rects.back().size(); ++j) {
-			if (win_rects.back()[j].valid) win_rects.back()[j].type = 2;
-		}
+		clusterWindowTypesC(win_rects);
 	}
 	else if (facade_id == 3) {
-		for (int i = 0; i < win_rects.size() - 2; ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
-			}
-		}
-		for (int j = 0; j < win_rects[win_rects.size() - 2].size(); ++j) {
-			if (win_rects[win_rects.size() - 2][j].valid) win_rects[win_rects.size() - 2][j].type = 1;
-		}
-		for (int j = 0; j < win_rects.back().size(); ++j) {
-			if (win_rects.back()[j].valid) win_rects.back()[j].type = 2;
-		}
+		clusterWindowTypesD(win_rects);
 	}
 	else if (facade_id == 4) {
-		for (int j = 0; j < win_rects[0].size(); ++j) {
-			if (win_rects[0][j].valid) win_rects[0][j].type = 0;
-		}
-		for (int i = 1; i < win_rects.size() - 2; ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
-			}
-		}
-		for (int j = 0; j < win_rects[win_rects.size() - 2].size(); ++j) {
-			if (win_rects[win_rects.size() - 2][j].valid) win_rects[win_rects.size() - 2][j].type = 2;
-		}
-		for (int j = 0; j < win_rects.back().size(); ++j) {
-			if (win_rects.back()[j].valid) win_rects.back()[j].type = 3;
-		}
+		clusterWindowTypesE(win_rects);
 	}
 	else if (facade_id == 5) {
-		for (int i = 0; i < win_rects.size(); ++i) {
-			for (int j = 0; j < win_rects[i].size(); j += win_rects[i].size() - 1) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
-			}
-			for (int j = 1; j < win_rects[i].size() - 1; ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
-			}
-		}
+		clusterWindowTypesF(win_rects);
 	}
 	else if (facade_id == 6) {
-		for (int i = 0; i < win_rects.size(); ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) {
-					if ((float)j == win_rects[i].size() / 2.0) {
-						win_rects[i][j].type = 0;
-					}
-					else {
-						win_rects[i][j].type = 1;
-					}
-				}
-			}
-		}
+		clusterWindowTypesG(win_rects);
 	}
 	else if (facade_id == 7) {
-		for (int i = 0; i < win_rects.size(); ++i) {
-			for (int j = 0; j < win_rects[i].size(); ++j) {
-				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
-			}
-		}
+		clusterWindowTypesH(win_rects);
 	}
 
 	std::cout << "-------------------------------------" << std::endl;
@@ -598,8 +532,6 @@ void MainWindow::onParameterEstimation() {
 		selected_win_types[it->first] = selected_win_type;
 		std::cout << "window group=" << it->first << ": type=" << selected_win_type << std::endl;
 	}
-
-
 
 }
 
