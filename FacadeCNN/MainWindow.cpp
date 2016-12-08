@@ -393,7 +393,7 @@ void MainWindow::onParameterEstimation() {
 	// classification
 	std::vector<Prediction> fac_predictions = fac_classifier.Classify(input_img, NUM_GRAMMARS);
 	int facade_id = fac_predictions[0].first;
-	std::cout << "grammar: " << facade_id << std::endl;
+	std::cout << "facade grammar: " << facade_id + 1 << std::endl;
 
 	// parameter estimation
 	std::vector<float> predicted_params = fac_regressions[facade_id]->Predict(input_img);
@@ -476,6 +476,8 @@ void MainWindow::onParameterEstimation() {
 		clusterWindowTypesH(win_rects);
 	}
 
+	std::cout << "-------------------------------------" << std::endl;
+	std::cout << "facade: " << facade_id + 1 << std::endl;
 	std::cout << "-------------------------------------" << std::endl;
 	std::cout << "window:" << std::endl;
 	std::map<int, std::vector<int>> win_type_votes;
