@@ -7,6 +7,8 @@ namespace utils {
 	double uniform_rand();
 	double uniform_rand(double a, double b);
 	float gause(float u, float sigma);
+	float stddev(std::vector<float> list);
+	float mean(std::vector<float> list);
 
 	void drawLine(cv::Mat& img, cv::Point p1, cv::Point p2, float edge_prob, int noise_amount, const cv::Scalar& color, int thickness);
 	void drawRectangle(cv::Mat& img, cv::Point p1, cv::Point p2, float edge_prob, int noise_amount, const cv::Scalar& color, int thickness);

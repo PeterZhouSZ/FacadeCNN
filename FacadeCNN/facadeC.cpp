@@ -79,7 +79,7 @@ cv::Mat generateRandomFacadeC(int width, int height, int thickness, std::pair<in
 	float FH = utils::uniform_rand(2.5, 4);
 
 	// 最上階の高さ
-	float AH = FH + utils::uniform_rand(0, 2);
+	float AH = FH + utils::uniform_rand(0.2, 2);
 
 	// １Fの高さ
 	float GH = FH + utils::uniform_rand(0, 2);

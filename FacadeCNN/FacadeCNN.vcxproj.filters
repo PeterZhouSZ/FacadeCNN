@@ -67,6 +67,12 @@
     <ClCompile Include="facadeH.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FacadeSegmentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CVUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Generated Files">
@@ -169,6 +175,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="facadeH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FacadeSegmentation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

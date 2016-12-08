@@ -17,6 +17,27 @@ namespace utils {
 		return 1.0f / 2.0f / M_PI / sigma / sigma * expf(-u * u / 2.0f / sigma / sigma);
 	}
 
+	float stddev(std::vector<float> list) {
+		if (list.size() <= 1) return 0.0f;
+
+		float avg = mean(list);
+
+		float total = 0.0f;
+		for (int i = 0; i < list.size(); ++i) {
+			total += (list[i] - avg) * (list[i] - avg);
+		}
+
+		return sqrt(total / (list.size() - 1));
+	}
+
+	float mean(std::vector<float> list) {
+		float sum = 0.0f;
+		for (int i = 0; i < list.size(); ++i) {
+			sum += list[i];
+		}
+		return sum / list.size();
+	}
+
 	void drawLine(cv::Mat& img, cv::Point p1, cv::Point p2, float edge_prob, int noise_amount, const cv::Scalar& color, int thickness) {
 		if (uniform_rand() < edge_prob) {
 			cv::line(img, cv::Point(p1.x + uniform_rand(-noise_amount, noise_amount + 1), p1.y + uniform_rand(-noise_amount, noise_amount + 1)),

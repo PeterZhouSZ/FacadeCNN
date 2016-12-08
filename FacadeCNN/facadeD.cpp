@@ -86,7 +86,13 @@ cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::pair<in
 	float GH = FH + utils::uniform_rand(0, 2);
 
 	// ２Fの高さ
-	float FH2 = FH + utils::uniform_rand(-1, 2);
+	float FH2;
+	if (utils::uniform_rand() < 0.333) {
+		FH2 = FH + utils::uniform_rand(-1, -0.2);
+	}
+	else {
+		FH2 = FH + utils::uniform_rand(0.2, 2);
+	}
 
 	// 各タイルの幅
 	float TW = utils::uniform_rand(2, 4);

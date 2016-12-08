@@ -63,21 +63,21 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 
 	// ビルの横マージン
 	float BS;
-	if (utils::uniform_rand() < 0.5) {
-		BS = utils::uniform_rand(TW * 0.2, TW * 0.7);
+	if (utils::uniform_rand() < 0.2) {
+		BS = utils::uniform_rand(TW * 0.5, TW * 0.7);
 	}
 	else {
 		BS = utils::uniform_rand(TW * 1.3, TW * 3);
 	}
 
 	// 各フロアの窓上部から天井までの高さ
-	float WT = utils::uniform_rand(0.2, 1);
+	float WT = utils::uniform_rand(0.1, 0.35);
 
 	// 各フロアの窓下部からフロア底面までの高さ
-	float WB = utils::uniform_rand(0.2, 1);
+	float WB = utils::uniform_rand(0.1, 0.35);
 
 	// 各フロアの窓の高さ
-	float WH = utils::uniform_rand(1, 2.5);
+	float WH = utils::uniform_rand(0.3, 0.8);
 
 	// 各フロアの各種高さをnormalize
 	ratio = FH / (WT + WB + WH);
@@ -86,13 +86,13 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WH *= ratio;
 
 	// 左・右端の窓上部から天井までの高さ
-	float WT2 = utils::uniform_rand(0.2, 1);
+	float WT2 = utils::uniform_rand(0.1, 0.35);
 
 	// 左・右端の窓下部からフロア底面までの高さ
-	float WB2 = utils::uniform_rand(0.2, 1);
+	float WB2 = utils::uniform_rand(0.1, 0.35);
 
 	// 左・右端の窓の高さ
-	float WH2 = utils::uniform_rand(1, 2.5);
+	float WH2 = utils::uniform_rand(0.3, 0.8);
 
 	// 左・右端の各種高さをnormalize
 	ratio = FH / (WT2 + WB2 + WH2);
@@ -101,10 +101,10 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WH2 *= ratio;
 
 	// 各フロアの窓の横マージン
-	float WS = utils::uniform_rand(0.2, 1);
+	float WS = utils::uniform_rand(0.05, 0.4);
 
 	// 各フロアの窓の幅
-	float WW = utils::uniform_rand(0.5, 2.5);
+	float WW = utils::uniform_rand(0.2, 0.9);
 
 	// 各フロアの各種幅をnormalize
 	ratio = TW / (WS * 2 + WW);
@@ -112,11 +112,11 @@ cv::Mat generateRandomFacadeF(int width, int height, int thickness, std::pair<in
 	WW *= ratio;
 
 	// 左・右端の窓の横のマージン
-	float WO2 = utils::uniform_rand(0.2, 1);
-	float WI2 = utils::uniform_rand(0.2, 1);
+	float WO2 = utils::uniform_rand(0.2, 0.6);
+	float WI2 = utils::uniform_rand(0.2, 0.6);
 
 	// 左・右端の窓の幅
-	float WW2 = utils::uniform_rand(0.5, 2.5);
+	float WW2 = utils::uniform_rand(0.1, 0.3);
 
 	// 左・右端の各種幅をnormalize
 	ratio = BS / (WO2 + WW2 + WI2);
@@ -195,7 +195,7 @@ cv::Mat generateFacadeF(int NF, int NC, int width, int height, int thickness, fl
 		for (int j = 0; j < NC - 2; ++j) {
 			int x1 = BS + TW * j + WS;
 			int y1 = height - BH - FH * i - WB - WH;
-			int x2 = BS + (WS * 2 + WW) * j + WS + WW;
+			int x2 = BS + TW * j + WS + WW;
 			int y2 = height - BH - FH * i - WB;
 
 			if (window_displacement > 0) {

@@ -10,7 +10,7 @@ ImageGenerationDialog::ImageGenerationDialog(QWidget *parent) : QDialog(parent) 
 	ui.lineEditImageSize->setText("227");
 	ui.checkBoxGrayscale->setChecked(false);
 	ui.lineEditEdgeDisplacement->setText("2");
-	ui.lineEditMissingWindows->setText("10");
+	ui.lineEditMissingWindows->setText("20");
 	ui.lineEditNumFloorsMin->setText("1");
 	ui.lineEditNumFloorsMax->setText("20");
 	ui.lineEditNumColumnsMin->setText("1");

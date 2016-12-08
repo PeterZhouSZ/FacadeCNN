@@ -17,6 +17,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QTextStream>
+#include "FacadeSegmentation.h"
 
 #ifndef SQR
 #define SQR(x)	((x) * (x))
@@ -162,7 +163,7 @@ void MainWindow::parameterEstimationAll() {
 	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
-	Classifier classifier("models/deploy.prototxt", "models/train_iter_40000.caffemodel", "models/mean.binaryproto");
+	Classifier classifier("models/deploy.prototxt", "models/train_iter_80000.caffemodel", "models/mean.binaryproto");
 	std::cout << "Recognition CNN was successfully loaded." << std::endl;
 
 	std::vector<boost::shared_ptr<Regression>> regressions(NUM_GRAMMARS);
@@ -339,57 +340,89 @@ void MainWindow::onParameterEstimation() {
 	if (filename.isEmpty()) return;
 	cv::Mat img = cv::imread(filename.toUtf8().constData());
 
-	QString filename2 = QFileDialog::getOpenFileName(this, tr("Open Window Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
-	if (filename2.isEmpty()) return;
-	cv::Mat win_img = cv::imread(filename2.toUtf8().constData());
-	
-	cv::Mat input_img;
-	cv::resize(win_img, input_img, cv::Size(227, 227));
-	cv::threshold(input_img, input_img, 250, 255, cv::THRESH_BINARY);
+	// extract number from the currently loaded image file name
+	int index1 = filename.lastIndexOf("/");
+	int index2 = filename.indexOf(".");
+	QString current_name = filename.mid(index1 + 1, index2 - index1 - 1);
 
-	Classifier classifier("models/deploy.prototxt", "models/train_iter_40000.caffemodel", "models/mean.binaryproto");
-	std::vector<boost::shared_ptr<Regression>> regressions(NUM_GRAMMARS);
-	regressions[0] = boost::shared_ptr<Regression>(new Regression("models/deploy_01.prototxt", "models/train_01_iter_40000.caffemodel"));
-	regressions[1] = boost::shared_ptr<Regression>(new Regression("models/deploy_02.prototxt", "models/train_02_iter_40000.caffemodel"));
-	regressions[2] = boost::shared_ptr<Regression>(new Regression("models/deploy_03.prototxt", "models/train_03_iter_40000.caffemodel"));
-	regressions[3] = boost::shared_ptr<Regression>(new Regression("models/deploy_04.prototxt", "models/train_04_iter_40000.caffemodel"));
-	regressions[4] = boost::shared_ptr<Regression>(new Regression("models/deploy_05.prototxt", "models/train_05_iter_40000.caffemodel"));
-	regressions[5] = boost::shared_ptr<Regression>(new Regression("models/deploy_06.prototxt", "models/train_06_iter_40000.caffemodel"));
-	regressions[6] = boost::shared_ptr<Regression>(new Regression("models/deploy_07.prototxt", "models/train_07_iter_40000.caffemodel"));
-	regressions[7] = boost::shared_ptr<Regression>(new Regression("models/deploy_08.prototxt", "models/train_08_iter_40000.caffemodel"));
+	int num_floors = 1;
+	int num_columns = 1;
+
+	// get #floors/#columns
+	QFile file("floors_columns.txt");
+	file.open(QIODevice::ReadOnly);
+	QTextStream in(&file);
+	while (!in.atEnd()) {
+		QString filename;
+		in >> filename >> num_floors >> num_columns;
+
+		int index = filename.indexOf(".png");
+		std::cout << filename.mid(0, index).toUtf8().constData() << std::endl;
+		if (filename.mid(0, index) == current_name) {
+			break;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// DEBUG
+	std::cout << "----------------------------------------------" << std::endl;
+	std::cout << "#floors = " << num_floors << ", #columns = " << num_columns << std::endl;
+	std::cout << "----------------------------------------------" << std::endl;
+	//////////////////////////////////////////////////////////////////////////////////
+
+	std::vector<float> y_splits;
+	std::vector<float> x_splits;
+	std::vector<std::vector<fs::WindowPos>> win_rects;
+	fs::subdivideFacade(img, (float)img.rows / num_floors, (float)img.cols / num_columns, false, y_splits, x_splits, win_rects);
+
+	// generate input image for facade CNN
+	cv::Mat input_img;
+	fs::generateWindowImage(y_splits, x_splits, win_rects, cv::Size(227, 227), input_img);
+
+	Classifier fac_classifier("models/facade/deploy.prototxt", "models/facade/train_iter_40000.caffemodel", "models/facade/mean.binaryproto");
+	std::vector<boost::shared_ptr<Regression>> fac_regressions(NUM_GRAMMARS);
+	fac_regressions[0] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_01.prototxt", "models/facade/train_01_iter_40000.caffemodel"));
+	fac_regressions[1] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_02.prototxt", "models/facade/train_02_iter_40000.caffemodel"));
+	fac_regressions[2] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_03.prototxt", "models/facade/train_03_iter_40000.caffemodel"));
+	fac_regressions[3] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_04.prototxt", "models/facade/train_04_iter_40000.caffemodel"));
+	fac_regressions[4] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_05.prototxt", "models/facade/train_05_iter_40000.caffemodel"));
+	fac_regressions[5] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_06.prototxt", "models/facade/train_06_iter_40000.caffemodel"));
+	fac_regressions[6] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_07.prototxt", "models/facade/train_07_iter_40000.caffemodel"));
+	fac_regressions[7] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_08.prototxt", "models/facade/train_08_iter_40000.caffemodel"));
 
 	// classification
-	std::vector<Prediction> predictions = classifier.Classify(input_img, NUM_GRAMMARS);
-	std::cout << "grammar: " << predictions[0].first << std::endl;
+	std::vector<Prediction> fac_predictions = fac_classifier.Classify(input_img, NUM_GRAMMARS);
+	int facade_id = fac_predictions[0].first;
+	std::cout << "grammar: " << facade_id << std::endl;
 
 	// parameter estimation
-	std::vector<float> predicted_params = regressions[predictions[0].first]->Predict(input_img);
+	std::vector<float> predicted_params = fac_regressions[facade_id]->Predict(input_img);
 	utils::output_vector(predicted_params);
 
 	// predictされた画像を作成する
 	cv::Mat predicted_img;
-	if (predictions[0].first == 0) {
+	if (facade_id == 0) {
 		predicted_img = generateFacadeA(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 1) {
+	else if (facade_id == 1) {
 		predicted_img = generateFacadeB(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 2) {
+	else if (facade_id == 2) {
 		predicted_img = generateFacadeC(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 3) {
+	else if (facade_id == 3) {
 		predicted_img = generateFacadeD(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 4) {
+	else if (facade_id == 4) {
 		predicted_img = generateFacadeE(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 5) {
+	else if (facade_id == 5) {
 		predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 6) {
+	else if (facade_id == 6) {
 		predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
-	else if (predictions[0].first == 7) {
+	else if (facade_id == 7) {
 		predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
 	}
 
@@ -408,5 +441,165 @@ void MainWindow::onParameterEstimation() {
 
 	cv::imwrite("input.png", input_img);
 	cv::imwrite("result.png", predicted_img);
+
+
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////
+	// window geometry detection
+	Classifier win_classifier("models/window/deploy.prototxt", "models/window/train_iter_20000.caffemodel", "models/window/mean.binaryproto");
+
+	// cluster the tiles based on the grammar
+	if (facade_id == 0) {
+		for (int i = 0; i < win_rects.size(); ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+			}
+		}
+	}
+	else if (facade_id == 1) {
+		for (int i = 0; i < win_rects.size() - 1; ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+			}
+		}
+		for (int j = 0; j < win_rects.back().size(); ++j) {
+			if (win_rects.back()[j].valid) win_rects.back()[j].type = 1;
+		}
+	}
+	else if (facade_id == 2) {
+		for (int j = 0; j < win_rects[0].size(); ++j) {
+			if (win_rects[0][j].valid) win_rects[0][j].type = 0;
+		}
+		for (int i = 1; i < win_rects.size() - 1; ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
+			}
+		}
+		for (int j = 0; j < win_rects.back().size(); ++j) {
+			if (win_rects.back()[j].valid) win_rects.back()[j].type = 2;
+		}
+	}
+	else if (facade_id == 3) {
+		for (int i = 0; i < win_rects.size() - 2; ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+			}
+		}
+		for (int j = 0; j < win_rects[win_rects.size() - 2].size(); ++j) {
+			if (win_rects[win_rects.size() - 2][j].valid) win_rects[win_rects.size() - 2][j].type = 1;
+		}
+		for (int j = 0; j < win_rects.back().size(); ++j) {
+			if (win_rects.back()[j].valid) win_rects.back()[j].type = 2;
+		}
+	}
+	else if (facade_id == 4) {
+		for (int j = 0; j < win_rects[0].size(); ++j) {
+			if (win_rects[0][j].valid) win_rects[0][j].type = 0;
+		}
+		for (int i = 1; i < win_rects.size() - 2; ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
+			}
+		}
+		for (int j = 0; j < win_rects[win_rects.size() - 2].size(); ++j) {
+			if (win_rects[win_rects.size() - 2][j].valid) win_rects[win_rects.size() - 2][j].type = 2;
+		}
+		for (int j = 0; j < win_rects.back().size(); ++j) {
+			if (win_rects.back()[j].valid) win_rects.back()[j].type = 3;
+		}
+	}
+	else if (facade_id == 5) {
+		for (int i = 0; i < win_rects.size(); ++i) {
+			for (int j = 0; j < win_rects[i].size(); j += win_rects[i].size() - 1) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+			}
+			for (int j = 1; j < win_rects[i].size() - 1; ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 1;
+			}
+		}
+	}
+	else if (facade_id == 6) {
+		for (int i = 0; i < win_rects.size(); ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) {
+					if ((float)j == win_rects[i].size() / 2.0) {
+						win_rects[i][j].type = 0;
+					}
+					else {
+						win_rects[i][j].type = 1;
+					}
+				}
+			}
+		}
+	}
+	else if (facade_id == 7) {
+		for (int i = 0; i < win_rects.size(); ++i) {
+			for (int j = 0; j < win_rects[i].size(); ++j) {
+				if (win_rects[i][j].valid) win_rects[i][j].type = 0;
+			}
+		}
+	}
+
+	std::cout << "-------------------------------------" << std::endl;
+	std::cout << "window:" << std::endl;
+	std::map<int, std::vector<int>> win_type_votes;
+	for (int i = 0; i < y_splits.size() - 1; ++i) {
+		for (int j = 0; j < x_splits.size() - 1; ++j) {
+			if (j > 0) std::cout << ", ";
+			if (win_rects[i][j].valid == fs::WindowPos::VALID) {
+				int x = x_splits[j];
+				int w = x_splits[j + 1] - x_splits[j];
+				int y = y_splits[i];
+				int h = y_splits[i + 1] - y_splits[i];
+
+				cv::Mat tile_img(img, cv::Rect(x, y, w, h));
+
+				cv::Mat tile_img227;
+				cv::resize(tile_img, tile_img227, cv::Size(227, 227));
+				
+				//////////////////////////////////////////////////////////////////
+				// DEBUG
+				char filename[256];
+				sprintf(filename, "results/tile_%d_%d.png", i, j);
+				cv::imwrite(filename, tile_img227);
+				//////////////////////////////////////////////////////////////////
+
+
+				std::vector<Prediction> win_predictions = win_classifier.Classify(tile_img227, 13);
+				int win_id = win_predictions[0].first + 1;
+				std::cout << win_id;
+
+				win_type_votes[win_rects[i][j].type].push_back(win_id);
+			}
+			else {
+				std::cout << " ";
+			}
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+
+	// find the maximum vote for each window group
+	std::map<int, int> selected_win_types;
+	for (auto it = win_type_votes.begin(); it != win_type_votes.end(); ++it) {
+		std::map<int, int> votes;
+		int max_votes = 0;
+		int selected_win_type = -1;
+		for (int k = 0; k < it->second.size(); ++k) {
+			votes[it->second[k]]++;
+			if (votes[it->second[k]] > max_votes) {
+				max_votes = votes[it->second[k]];
+				selected_win_type = it->second[k];
+			}
+		}
+
+		selected_win_types[it->first] = selected_win_type;
+		std::cout << "window group=" << it->first << ": type=" << selected_win_type << std::endl;
+	}
+
+
+
 }
 
