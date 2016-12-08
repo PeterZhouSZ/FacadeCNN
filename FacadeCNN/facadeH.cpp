@@ -41,7 +41,7 @@ cv::Mat generateFacadeH(int width, int height, int thickness, std::pair<int, int
 	float TWT2 = AH / (params[23] + params[24] + params[25]) * params[24];
 	float TWB2 = AH / (params[23] + params[24] + params[25]) * params[25];
 
-	return generateFacadeH(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, WW2, WH2, WO2, WI2, WT2, WB2, DT, DH, TWH, TWT, TWB, TWH2, TWT2, TWB2);
+	return generateFacadeH(1, NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, WW2, WH2, WO2, WI2, WT2, WB2, DT, DH, TWH, TWT, TWB, TWH2, TWT2, TWB2);
 }
 
 cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement, float window_prob) {
@@ -55,38 +55,38 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	// パラメータを設定
 	float ratio;
 
-	int NF = utils::uniform_rand(range_NF.first, range_NF.second + 1);
-	int NC = utils::uniform_rand(range_NC.first, range_NC.second + 1);
+	int NF = utils::genRand(range_NF.first, range_NF.second + 1);
+	int NC = utils::genRand(range_NC.first, range_NC.second + 1);
 
 	// 各フロアの高さ
-	float FH = utils::uniform_rand(2.5, 4);
+	float FH = utils::genRand(2.5, 4);
 
 	// １Fの高さ
-	float GH = FH + utils::uniform_rand(0, 2);
+	float GH = FH + utils::genRand(0, 2);
 
 	// 最上階の高さ
-	float AH = FH + utils::uniform_rand(0.2, 2);
+	float AH = FH + utils::genRand(0.2, 2);
 
 	// 各タイルの幅
-	float TW = utils::uniform_rand(2, 4);
+	float TW = utils::genRand(2, 4);
 
 	// ビルの横マージン
 	float BS;
-	if (utils::uniform_rand() < 0.2) {
-		BS = utils::uniform_rand(TW * 0.5, TW * 0.7);
+	if (utils::genRand() < 0.2) {
+		BS = utils::genRand(TW * 0.5, TW * 0.7);
 	}
 	else {
-		BS = utils::uniform_rand(TW * 1.3, TW * 3);
+		BS = utils::genRand(TW * 1.3, TW * 3);
 	}
 
 	// 各フロアの窓上部から天井までの高さ
-	float WT = utils::uniform_rand(0.1, 0.35);
+	float WT = utils::genRand(0.1, 0.35);
 
 	// 各フロアの窓下部からフロア底面までの高さ
-	float WB = utils::uniform_rand(0.1, 0.35);
+	float WB = utils::genRand(0.1, 0.35);
 
 	// 各フロアの窓の高さ
-	float WH = utils::uniform_rand(0.3, 0.8);
+	float WH = utils::genRand(0.3, 0.8);
 
 	// 各フロアの各種高さをnormalize
 	ratio = FH / (WT + WB + WH);
@@ -95,13 +95,13 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	WH *= ratio;
 
 	// 左・右端の窓上部から天井までの高さ
-	float WT2 = utils::uniform_rand(0.1, 0.35);
+	float WT2 = utils::genRand(0.1, 0.35);
 
 	// 左・右端の窓下部からフロア底面までの高さ
-	float WB2 = utils::uniform_rand(0.1, 0.35);
+	float WB2 = utils::genRand(0.1, 0.35);
 
 	// 左・右端の窓の高さ
-	float WH2 = utils::uniform_rand(0.3, 0.8);
+	float WH2 = utils::genRand(0.3, 0.8);
 
 	// 左・右端の各種高さをnormalize
 	ratio = FH / (WT2 + WB2 + WH2);
@@ -110,10 +110,10 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	WH2 *= ratio;
 
 	// 各フロアの窓の横マージン
-	float WS = utils::uniform_rand(0.05, 0.4);
+	float WS = utils::genRand(0.05, 0.4);
 
 	// 各フロアの窓の幅
-	float WW = utils::uniform_rand(0.2, 0.9);
+	float WW = utils::genRand(0.2, 0.9);
 
 	// 各フロアの各種幅をnormalize
 	ratio = TW / (WS * 2 + WW);
@@ -121,11 +121,11 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	WW *= ratio;
 
 	// 左・右端の窓の横のマージン
-	float WO2 = utils::uniform_rand(0.2, 0.6);
-	float WI2 = utils::uniform_rand(0.2, 0.6);
+	float WO2 = utils::genRand(0.2, 0.6);
+	float WI2 = utils::genRand(0.2, 0.6);
 
 	// 左・右端の窓の幅
-	float WW2 = utils::uniform_rand(0.1, 0.3);
+	float WW2 = utils::genRand(0.1, 0.3);
 
 	// 左・右端の各種幅をnormalize
 	ratio = BS / (WO2 + WW2 + WI2);
@@ -134,13 +134,13 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	WI2 *= ratio;
 
 	// 最上階の窓上部から天井までの高さ
-	float TWT = utils::uniform_rand(0.1, 1);
+	float TWT = utils::genRand(0.1, 1);
 
 	// 最上階の窓下部からフロア底面までの高さ
-	float TWB = utils::uniform_rand(0.1, 0.35);
+	float TWB = utils::genRand(0.1, 0.35);
 
 	// 最上階の窓の高さ
-	float TWH = utils::uniform_rand(0.3, 0.8);
+	float TWH = utils::genRand(0.3, 0.8);
 
 	// 最上階の各種高さをnormalize
 	ratio = AH / (TWT + TWB + TWH);
@@ -149,13 +149,13 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	TWH *= ratio;
 
 	// 左右の最上階のドア上部から天井までの高さ
-	float TWT2 = utils::uniform_rand(0.2, 2);
+	float TWT2 = utils::genRand(0.2, 2);
 
 	// 左右の最上階の窓下部からフロア底面までの高さ
-	float TWB2 = utils::uniform_rand(0.2, 1);
+	float TWB2 = utils::genRand(0.2, 1);
 
 	// 左右の最上階のドアの高さ
-	float TWH2 = utils::uniform_rand(1, 2.5);
+	float TWH2 = utils::genRand(1, 2.5);
 
 	// 左右の最上階の各種高さをnormalize
 	ratio = AH / (TWT2 + TWB2 + TWH2);
@@ -164,10 +164,10 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	TWH2 *= ratio;
 
 	// １Fのドア上部から天井までの高さ
-	float DT = utils::uniform_rand(0.2, 1.5);
+	float DT = utils::genRand(0.2, 1.5);
 
 	// １Fのドアの高さ
-	float DH = utils::uniform_rand(2, 3);
+	float DH = utils::genRand(2, 3);
 
 	// １Fの各種高さをnormalize
 	ratio = GH / (DT + DH);
@@ -234,63 +234,63 @@ cv::Mat generateRandomFacadeH(int width, int height, int thickness, std::pair<in
 	return generateFacadeH(NF, NC, width, height, thickness, WW, WH, WS, WT, WB, BS, TW, AH, FH, GH, WW2, WH2, WO2, WI2, WT2, WB2, DT, DH, TWH, TWT, TWB, TWH2, TWT2, TWB2, window_displacement, window_prob);
 }
 
-cv::Mat generateFacadeH(int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, float WW2, float WH2, float WO2, float WI2, float WT2, float WB2, float DT, float DH, float TWH, float TWT, float TWB, float TWH2, float TWT2, float TWB2, int window_displacement, float window_prob) {
-	cv::Mat result(height, width, CV_8UC3, cv::Scalar(255, 255, 255));
+cv::Mat generateFacadeH(float scale, int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float BS, float TW, float AH, float FH, float GH, float WW2, float WH2, float WO2, float WI2, float WT2, float WB2, float DT, float DH, float TWH, float TWT, float TWB, float TWH2, float TWT2, float TWB2, int window_displacement, float window_prob) {
+	cv::Mat result(height * scale, width * scale, CV_8UC3, cv::Scalar(255, 255, 255));
 
 	// １Fのドアを描画
 	{
 		// 左端
 		{
-			int x1 = WO2;
-			int y1 = height - DH;
-			int x2 = WO2 + WW2;
-			int y2 = height - 1;
+			int x1 = WO2 * scale;
+			int y1 = (height - DH) * scale;
+			int x2 = (WO2 + WW2) * scale;
+			int y2 = height * scale - 1;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 
 		for (int j = 0; j < NC - 2; ++j) {
-			int x1 = BS + TW * j + WS;
-			int y1 = height - DH;
-			int x2 = BS + TW * j + WS + WW;
-			int y2 = height - 1;
+			int x1 = (BS + TW * j + WS) * scale;
+			int y1 = (height - DH) * scale;
+			int x2 = (BS + TW * j + WS + WW) * scale;
+			int y2 = height * scale - 1;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 
 		// 右端
 		{
-			int x1 = BS + TW * (NC - 2) + WI2;
-			int y1 = height - DH;
-			int x2 = BS + TW * (NC - 2) + WI2 + WW2;
-			int y2 = height - 1;
+			int x1 = (BS + TW * (NC - 2) + WI2) * scale;
+			int y1 = (height - DH) * scale;
+			int x2 = (BS + TW * (NC - 2) + WI2 + WW2) * scale;
+			int y2 = height * scale - 1;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
@@ -300,56 +300,56 @@ cv::Mat generateFacadeH(int NF, int NC, int width, int height, int thickness, fl
 	for (int i = 0; i < NF - 2; ++i) {
 		// 左端
 			{
-				int x1 = WO2;
-				int y1 = height - GH - FH * i - WB2 - WH2;
-				int x2 = WO2 + WW2;
-				int y2 = height - GH - FH * i - WB2;
+				int x1 = WO2 * scale;
+				int y1 = (height - GH - FH * i - WB2 - WH2) * scale;
+				int x2 = (WO2 + WW2) * scale;
+				int y2 = (height - GH - FH * i - WB2) * scale;
 
 				if (window_displacement > 0) {
-					x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-					y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-					x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-					y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+					x1 += utils::genRand(-window_displacement, window_displacement + 1);
+					y1 += utils::genRand(-window_displacement, window_displacement + 1);
+					x2 += utils::genRand(-window_displacement, window_displacement + 1);
+					y2 += utils::genRand(-window_displacement, window_displacement + 1);
 				}
 
-				if (utils::uniform_rand() < window_prob) {
+				if (utils::genRand() < window_prob) {
 					cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 				}
 			}
 
 		for (int j = 0; j < NC - 2; ++j) {
-			int x1 = BS + TW * j + WS;
-			int y1 = height - GH - FH * i - WB - WH;
-			int x2 = BS + TW * j + WS + WW;
-			int y2 = height - GH - FH * i - WB;
+			int x1 = (BS + TW * j + WS) * scale;
+			int y1 = (height - GH - FH * i - WB - WH) * scale;
+			int x2 = (BS + TW * j + WS + WW) * scale;
+			int y2 = (height - GH - FH * i - WB) * scale;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 
 		// 右端
 		{
-			int x1 = BS + TW * (NC - 2) + WI2;
-			int y1 = height - GH - FH * i - WB2 - WH2;
-			int x2 = BS + TW * (NC - 2) + WI2 + WW2;
-			int y2 = height - GH - FH * i - WB2;
+			int x1 = (BS + TW * (NC - 2) + WI2) * scale;
+			int y1 = (height - GH - FH * i - WB2 - WH2) * scale;
+			int x2 = (BS + TW * (NC - 2) + WI2 + WW2) * scale;
+			int y2 = (height - GH - FH * i - WB2) * scale;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
@@ -359,56 +359,56 @@ cv::Mat generateFacadeH(int NF, int NC, int width, int height, int thickness, fl
 	{
 		// 左端
 		{
-			int x1 = WO2;
-			int y1 = height - GH - FH * (NF - 2) - TWB2 - TWH2;
-			int x2 = WO2 + WW2;
-			int y2 = height - GH - FH * (NF - 2) - TWB2;
+			int x1 = WO2 * scale;
+			int y1 = (height - GH - FH * (NF - 2) - TWB2 - TWH2) * scale;
+			int x2 = (WO2 + WW2) * scale;
+			int y2 = (height - GH - FH * (NF - 2) - TWB2) * scale;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 
 		for (int j = 0; j < NC - 2; ++j) {
-			int x1 = BS + TW * j + WS;
-			int y1 = height - GH - FH * (NF - 2) - TWB - TWH;
-			int x2 = BS + TW * j + WS + WW;
-			int y2 = height - GH - FH * (NF - 2) - TWB;
+			int x1 = (BS + TW * j + WS) * scale;
+			int y1 = (height - GH - FH * (NF - 2) - TWB - TWH) * scale;
+			int x2 = (BS + TW * j + WS + WW) * scale;
+			int y2 = (height - GH - FH * (NF - 2) - TWB) * scale;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
 
 		// 右端
 		{
-			int x1 = BS + TW * (NC - 2) + WI2;
-			int y1 = height - GH - FH * (NF - 2) - TWB2 - TWH2;
-			int x2 = BS + TW * (NC - 2) + WI2 + WW2;
-			int y2 = height - GH - FH * (NF - 2) - TWB2;
+			int x1 = (BS + TW * (NC - 2) + WI2) * scale;
+			int y1 = (height - GH - FH * (NF - 2) - TWB2 - TWH2) * scale;
+			int x2 = (BS + TW * (NC - 2) + WI2 + WW2) * scale;
+			int y2 = (height - GH - FH * (NF - 2) - TWB2) * scale;
 
 			if (window_displacement > 0) {
-				x1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y1 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				x2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
-				y2 += utils::uniform_rand(-window_displacement, window_displacement + 1);
+				x1 += utils::genRand(-window_displacement, window_displacement + 1);
+				y1 += utils::genRand(-window_displacement, window_displacement + 1);
+				x2 += utils::genRand(-window_displacement, window_displacement + 1);
+				y2 += utils::genRand(-window_displacement, window_displacement + 1);
 			}
 
-			if (utils::uniform_rand() < window_prob) {
+			if (utils::genRand() < window_prob) {
 				cv::rectangle(result, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 0), thickness);
 			}
 		}
