@@ -455,29 +455,30 @@ void MainWindow::onParameterEstimation() {
 	Classifier win_classifier("models/window/deploy.prototxt", "models/window/train_iter_20000.caffemodel", "models/window/mean.binaryproto");
 
 	// cluster the tiles based on the grammar
+	int num_window_types;
 	if (facade_id == 0) {
-		clusterWindowTypesA(win_rects);
+		num_window_types = clusterWindowTypesA(win_rects);
 	}
 	else if (facade_id == 1) {
-		clusterWindowTypesB(win_rects);
+		num_window_types = clusterWindowTypesB(win_rects);
 	}
 	else if (facade_id == 2) {
-		clusterWindowTypesC(win_rects);
+		num_window_types = clusterWindowTypesC(win_rects);
 	}
 	else if (facade_id == 3) {
-		clusterWindowTypesD(win_rects);
+		num_window_types = clusterWindowTypesD(win_rects);
 	}
 	else if (facade_id == 4) {
-		clusterWindowTypesE(win_rects);
+		num_window_types = clusterWindowTypesE(win_rects);
 	}
 	else if (facade_id == 5) {
-		clusterWindowTypesF(win_rects);
+		num_window_types = clusterWindowTypesF(win_rects);
 	}
 	else if (facade_id == 6) {
-		clusterWindowTypesG(win_rects);
+		num_window_types = clusterWindowTypesG(win_rects);
 	}
 	else if (facade_id == 7) {
-		clusterWindowTypesH(win_rects);
+		num_window_types = clusterWindowTypesH(win_rects);
 	}
 
 	std::cout << "-------------------------------------" << std::endl;
@@ -508,8 +509,8 @@ void MainWindow::onParameterEstimation() {
 
 
 				std::vector<Prediction> win_predictions = win_classifier.Classify(tile_img227, 13);
-				int win_id = win_predictions[0].first + 1;
-				std::cout << win_id << "(" << win_rects[i][j].type << ")";
+				int win_id = win_predictions[0].first;
+				std::cout << win_id + 1 << "(" << win_rects[i][j].type << ")";
 
 				win_type_votes[win_rects[i][j].type].push_back(win_id);
 			}
@@ -523,20 +524,21 @@ void MainWindow::onParameterEstimation() {
 
 	// find the maximum vote for each window group
 	std::map<int, int> selected_win_types;
-	for (auto it = win_type_votes.begin(); it != win_type_votes.end(); ++it) {
-		std::map<int, int> votes;
+	for (int i = 0; i < num_window_types; ++i) {
+		std::map<int, int> votes;	// mapping from window type to #votes
 		int max_votes = 0;
-		int selected_win_type = -1;
-		for (int k = 0; k < it->second.size(); ++k) {
-			votes[it->second[k]]++;
-			if (votes[it->second[k]] > max_votes) {
-				max_votes = votes[it->second[k]];
-				selected_win_type = it->second[k];
+		int selected_win_type = 0;
+
+		for (int k = 0; k < win_type_votes[i].size(); ++k) {
+			votes[win_type_votes[i][k]]++;
+			if (votes[win_type_votes[i][k]] > max_votes) {
+				max_votes = votes[win_type_votes[i][k]];
+				selected_win_type = win_type_votes[i][k];
 			}
 		}
 
-		selected_win_types[it->first] = selected_win_type;
-		std::cout << "window group=" << it->first << ": type=" << selected_win_type << std::endl;
+		selected_win_types[i] = selected_win_type;
+		std::cout << "window group=" << i << ": type=" << selected_win_type << std::endl;
 	}
 
 }

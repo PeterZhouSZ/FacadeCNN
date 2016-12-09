@@ -8,4 +8,4 @@ cv::Mat generateFacadeD(int width, int height, int thickness, std::pair<int, int
 cv::Mat generateRandomFacadeD(int width, int height, int thickness, std::pair<int, int> range_NF, std::pair<int, int> range_NC, std::vector<float>& params, int window_displacement = 0, float window_prob = 1);
 cv::Mat generateFacadeD(float scale, int NF, int NC, int width, int height, int thickness, float WW, float WH, float WS, float WT, float WB, float WW2, float WH2, float WS2, float WT2, float WB2, float BS, float TW, float AH, float FH, float FH2, float GH, int ND, float DT, float DH, float DW, float DS, int window_displacement = 0, float window_prob = 1);
 
-void clusterWindowTypesD(std::vector<std::vector<fs::WindowPos>>& win_rects);
+int clusterWindowTypesD(std::vector<std::vector<fs::WindowPos>>& win_rects);

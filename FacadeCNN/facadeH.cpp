@@ -421,7 +421,7 @@ cv::Mat generateFacadeH(float scale, int NF, int NC, int width, int height, int 
 	return result;
 }
 
-void clusterWindowTypesH(std::vector<std::vector<fs::WindowPos>>& win_rects) {
+int clusterWindowTypesH(std::vector<std::vector<fs::WindowPos>>& win_rects) {
 	for (int j = 0; j < win_rects[0].size(); j += win_rects[0].size() - 1) {
 		win_rects[0][j].type = 0;
 	}
@@ -447,4 +447,6 @@ void clusterWindowTypesH(std::vector<std::vector<fs::WindowPos>>& win_rects) {
 	for (int j = 1; j < win_rects.back().size() - 1; ++j) {
 		win_rects.back()[j].type = 5;
 	}
+
+	return 6;
 }
