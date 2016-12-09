@@ -163,7 +163,7 @@ void MainWindow::parameterEstimationAll() {
 	std::pair<int, int> range_NF = std::make_pair(dlg.ui.lineEditNumFloorsMin->text().toInt(), dlg.ui.lineEditNumFloorsMax->text().toInt());
 	std::pair<int, int> range_NC = std::make_pair(dlg.ui.lineEditNumColumnsMin->text().toInt(), dlg.ui.lineEditNumColumnsMax->text().toInt());
 
-	Classifier classifier("models/deploy.prototxt", "models/train_iter_80000.caffemodel", "models/mean.binaryproto");
+	Classifier classifier("models/deploy.prototxt", "models/train_iter_20000.caffemodel", "models/mean.binaryproto");
 	std::cout << "Recognition CNN was successfully loaded." << std::endl;
 
 	std::vector<boost::shared_ptr<Regression>> regressions(NUM_GRAMMARS);
@@ -264,28 +264,28 @@ void MainWindow::parameterEstimationAll() {
 		// predictされた画像を作成する
 		cv::Mat predicted_img;
 		if (predictions[0].first == 0) {
-			predicted_img = generateFacadeA(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeA(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 1) {
-			predicted_img = generateFacadeB(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeB(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 2) {
-			predicted_img = generateFacadeC(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeC(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 3) {
-			predicted_img = generateFacadeD(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeD(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 4) {
-			predicted_img = generateFacadeE(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeE(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 5) {
-			predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 6) {
-			predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 		else if (predictions[0].first == 7) {
-			predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+			predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, 99, 99, predicted_params);
 		}
 
 		// make the predicted image blue
@@ -379,7 +379,7 @@ void MainWindow::onParameterEstimation() {
 	cv::Mat input_img;
 	fs::generateWindowImage(y_splits, x_splits, win_rects, cv::Size(227, 227), input_img);
 
-	Classifier fac_classifier("models/facade/deploy.prototxt", "models/facade/train_iter_40000.caffemodel", "models/facade/mean.binaryproto");
+	Classifier fac_classifier("models/facade/deploy.prototxt", "models/facade/train_iter_20000.caffemodel", "models/facade/mean.binaryproto");
 	std::vector<boost::shared_ptr<Regression>> fac_regressions(NUM_GRAMMARS);
 	fac_regressions[0] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_01.prototxt", "models/facade/train_01_iter_40000.caffemodel"));
 	fac_regressions[1] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_02.prototxt", "models/facade/train_02_iter_40000.caffemodel"));
@@ -399,33 +399,36 @@ void MainWindow::onParameterEstimation() {
 	std::vector<float> predicted_params = fac_regressions[facade_id]->Predict(input_img);
 	utils::output_vector(predicted_params);
 
+
+
 	// predictされた画像を作成する
 	cv::Mat predicted_img;
 	if (facade_id == 0) {
-		predicted_img = generateFacadeA(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeA(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 1) {
-		predicted_img = generateFacadeB(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeB(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 2) {
-		predicted_img = generateFacadeC(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeC(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 3) {
-		predicted_img = generateFacadeD(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeD(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 4) {
-		predicted_img = generateFacadeE(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeE(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 5) {
-		predicted_img = generateFacadeF(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeF(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 6) {
-		predicted_img = generateFacadeG(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeG(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 	else if (facade_id == 7) {
-		predicted_img = generateFacadeH(img.cols, img.rows, 2, range_NF, range_NC, predicted_params);
+		predicted_img = generateFacadeH(img.cols, img.rows, 1, range_NF, range_NC, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
 	}
 
+#if 0
 	// make the predicted image blue
 	for (int r = 0; r < predicted_img.rows; ++r) {
 		for (int c = 0; c < predicted_img.cols; ++c) {
@@ -438,6 +441,7 @@ void MainWindow::onParameterEstimation() {
 			}
 		}
 	}
+#endif
 
 	cv::imwrite("input.png", input_img);
 	cv::imwrite("result.png", predicted_img);
@@ -505,12 +509,12 @@ void MainWindow::onParameterEstimation() {
 
 				std::vector<Prediction> win_predictions = win_classifier.Classify(tile_img227, 13);
 				int win_id = win_predictions[0].first + 1;
-				std::cout << win_id;
+				std::cout << win_id << "(" << win_rects[i][j].type << ")";
 
 				win_type_votes[win_rects[i][j].type].push_back(win_id);
 			}
 			else {
-				std::cout << " ";
+				std::cout << " " << "(" << win_rects[i][j].type << ")";
 			}
 		}
 		std::cout << std::endl;
