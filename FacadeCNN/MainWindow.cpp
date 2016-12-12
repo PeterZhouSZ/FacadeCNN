@@ -538,7 +538,7 @@ void MainWindow::onParameterEstimation() {
 		}
 
 		selected_win_types[i] = selected_win_type;
-		std::cout << "window group=" << i << ": type=" << selected_win_type << std::endl;
+		std::cout << "window group=" << i << ": type=" << selected_win_type + 1 << std::endl;
 	}
 
 }
