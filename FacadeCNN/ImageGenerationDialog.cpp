@@ -9,12 +9,8 @@ ImageGenerationDialog::ImageGenerationDialog(QWidget *parent) : QDialog(parent) 
 	ui.lineEditNumImages->setText("10000");
 	ui.lineEditImageSize->setText("227");
 	ui.checkBoxGrayscale->setChecked(false);
-	ui.lineEditEdgeDisplacement->setText("2");
+	ui.lineEditEdgeDisplacement->setText("14");
 	ui.lineEditMissingWindows->setText("20");
-	ui.lineEditNumFloorsMin->setText("1");
-	ui.lineEditNumFloorsMax->setText("20");
-	ui.lineEditNumColumnsMin->setText("1");
-	ui.lineEditNumColumnsMax->setText("20");
 
 	connect(ui.pushButtonOutputDirectory, SIGNAL(clicked()), this, SLOT(onOutputDirectory()));
 	connect(ui.pushButtonOK, SIGNAL(clicked()), this, SLOT(onOK()));
