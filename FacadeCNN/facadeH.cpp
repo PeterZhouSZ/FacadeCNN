@@ -1,8 +1,8 @@
 ﻿#include "facadeH.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeH::range_NF = std::make_pair(2, 40);
-std::pair<int, int> FacadeH::range_NC = std::make_pair(5, 40);
+std::pair<int, int> FacadeH::range_NF = std::make_pair(2, 20);
+std::pair<int, int> FacadeH::range_NC = std::make_pair(3, 20);
 
 cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -12,8 +12,8 @@ cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int max_NF
 }
 
 void FacadeH::decodeParams(float width, float height, int max_NF, int max_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
-	if (max_NF < 1) max_NF = 1;
-	if (max_NC < 3) max_NC = 3;
+	if (max_NF < 2) max_NF = 2;
+	if (max_NC < 5) max_NC = 5;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
@@ -203,6 +203,8 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 	int NF = std::round((float)(height - AH - GH) / FH) + 1;
 	int NC = std::round((float)(width - SW * 2 - TW2) / TW) + 1;
 
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
+
 	// 1Fの窓を描画
 	{
 		// 左半分
@@ -327,7 +329,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 }
 
 int FacadeH::clusterWindowTypes(std::vector<std::vector<fs::WindowPos>>& win_rects) {
-	for (int i = 0; i < win_rects.size(); ++i) {
+	for (int i = 0; i < win_rects.size() - 1; ++i) {
 		for (int j = 0; j < win_rects[i].size(); ++j) {
 			if (j == (win_rects[i].size() - win_rects[i].size() % 2) / 2) {
 				win_rects[i][j].type = 0;
@@ -338,5 +340,14 @@ int FacadeH::clusterWindowTypes(std::vector<std::vector<fs::WindowPos>>& win_rec
 		}
 	}
 
-	return 2;
+	for (int j = 0; j < win_rects.back().size(); ++j) {
+		if (j == (win_rects.back().size() - win_rects.back().size() % 2) / 2) {
+			win_rects.back()[j].type = 2;
+		}
+		else {
+			win_rects.back()[j].type = 3;
+		}
+	}
+
+	return 4;
 }

@@ -1,8 +1,8 @@
 ﻿#include "facadeE.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeE::range_NF = std::make_pair(1, 40);
-std::pair<int, int> FacadeE::range_NC = std::make_pair(5, 40);
+std::pair<int, int> FacadeE::range_NF = std::make_pair(1, 20);
+std::pair<int, int> FacadeE::range_NC = std::make_pair(5, 20);
 
 cv::Mat FacadeE::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -13,7 +13,7 @@ cv::Mat FacadeE::generateFacade(int width, int height, int thickness, int max_NF
 
 void FacadeE::decodeParams(float width, float height, int max_NF, int max_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
 	if (max_NF < 1) max_NF = 1;
-	if (max_NC < 3) max_NC = 3;
+	if (max_NC < 5) max_NC = 5;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
@@ -161,9 +161,11 @@ cv::Mat FacadeE::generateRandomFacade(int width, int height, int thickness, std:
 
 cv::Mat FacadeE::generateFacade(float scale, int width, int height, int thickness, float GH, float FH, float AH, float SW, float TW, float WT, float WH, float WB, float WS, float WW, float WT2, float WH2, float WB2, float WO2, float WW2, float WI2, float window_displacement, float window_prob) {
 	cv::Mat result(height * scale, width * scale, CV_8UC3, cv::Scalar(255, 255, 255));
-
+	
 	int NF = std::round((float)(height - AH - GH) / FH);
 	int NC = std::round((float)(width - SW * 2) / TW) + 2;
+
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
 
 	// 窓を描画
 	for (int i = 0; i < NF; ++i) {

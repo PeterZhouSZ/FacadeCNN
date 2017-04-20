@@ -1,3 +1,5 @@
+#pragma once
+
 #undef ERROR
 #undef STRICT
 
@@ -14,15 +16,10 @@
 using namespace caffe;  // NOLINT(build/namespaces)
 using std::string;
 
-/* Pair (label, confidence) representing a prediction. */
-//typedef std::pair<string, float> Prediction;
-typedef std::pair<int, float> Prediction;
-
 class Regression {
 public:
 	Regression(const string& model_file, const string& trained_file);
 
-	std::vector<Prediction> Classify(const cv::Mat& img, int N = 5);
 	std::vector<float> Predict(const cv::Mat& img);
 
 private:

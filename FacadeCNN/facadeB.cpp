@@ -1,8 +1,8 @@
 ﻿#include "facadeB.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeB::range_NF = std::make_pair(2, 50);
-std::pair<int, int> FacadeB::range_NC = std::make_pair(1, 40);
+std::pair<int, int> FacadeB::range_NF = std::make_pair(2, 20);
+std::pair<int, int> FacadeB::range_NC = std::make_pair(1, 20);
 
 cv::Mat FacadeB::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -159,6 +159,8 @@ cv::Mat FacadeB::generateFacade(float scale, int width, int height, int thicknes
 	int NF = std::round((float)(height - AH - GH) / FH) + 1;
 	int NC = std::round((float)(width - SW * 2) / TW);
 	int ND = std::round((float)(width - SW * 2) / GW);
+
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
 
 	// １Fのドアを描画
 	for (int j = 0; j < ND; ++j) {

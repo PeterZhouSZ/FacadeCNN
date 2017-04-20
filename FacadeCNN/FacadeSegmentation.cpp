@@ -820,102 +820,67 @@ namespace fs {
 		}
 	}
 
-	void align(const cv::Mat& edge_img, const std::vector<float>& y_split, const std::vector<float>& x_split, std::vector<std::vector<WindowPos>> &winpos, int max_iter) {
-		// 窓のX座標をvoteする
-		for (int j = 0; j < x_split.size() - 1; ++j) {
-			int max_left, max_right;
+	cv::Scalar getDominantColor(const cv::Mat& img, std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, int clusterCount) {
+		cv::Mat lab_img;
+		cv::cvtColor(img, lab_img, cv::COLOR_BGR2Lab);
 
-			// voteする
-			std::vector<float> histogram1(x_split[j + 1] - x_split[j], 0);
-			std::vector<float> histogram2(x_split[j + 1] - x_split[j], 0);
-			int count = 0;
-			for (int i = 0; i < y_split.size() - 1; ++i) {
-				if (!winpos[i][j].valid) continue;
+		// k-means
+		std::vector<std::vector<float>> raw_samples;
+		for (int i = 0; i < y_splits.size() - 1; ++i) {
+			for (int j = 0; j < x_splits.size() - 1; ++j) {
+				if (win_rects[i][j].valid != fs::WindowPos::VALID) continue;
 
-				count++;
-				for (int c = 0; c < histogram1.size(); ++c) {
-					histogram1[c] += utils::gause(winpos[i][j].left - c, 2);
-					histogram2[c] += utils::gause(winpos[i][j].right - c, 2);
-				}
-			}
+				for (int v = 0; v < y_splits[i + 1] - y_splits[i]; ++v) {
+					for (int u = 0; u < x_splits[j + 1] - x_splits[j]; ++u) {
+						if (v >= win_rects[i][j].top && v <= win_rects[i][j].bottom && u >= win_rects[i][j].left && u <= win_rects[i][j].right) continue;
 
-			if (count == 0) continue;
+						cv::Vec3b col = lab_img.at<cv::Vec3b>(y_splits[i] + v, x_splits[j] + u);
 
-			// max voteを探す
-			float max_val1 = 0.0f;
-			float max_val2 = 0.0f;
-			for (int c = 0; c < histogram1.size(); ++c) {
-				if (histogram1[c] > max_val1) {
-					max_val1 = histogram1[c];
-					max_left = c;
-				}
-				if (histogram2[c] > max_val2) {
-					max_val2 = histogram2[c];
-					max_right = c;
-				}
-			}
-
-			// 全てのフロアの窓のX座標をそろえる
-			for (int r = 0; r < y_split.size() - 1; ++r) {
-				if (!winpos[r][j].valid) continue;
-
-				if (r == 0 || r == y_split.size() - 1) {
-					if (abs(winpos[r][j].left - max_left) < 5) {
-						winpos[r][j].left = max_left;
+						std::vector<float> v(3);
+						for (int k = 0; k < 3; ++k) {
+							v[k] = col[k];
+						}
+						raw_samples.push_back(v);
 					}
-					if (abs(winpos[r][j].right - max_right) < 5) {
-						winpos[r][j].right = max_right;
-					}
-				}
-				else {
-					winpos[r][j].left = max_left;
-					winpos[r][j].right = max_right;
 				}
 			}
 		}
-
-		// 窓のY座標をvoteする
-		for (int i = 0; i < y_split.size() - 1; ++i) {
-			int max_top, max_bottom;
-
-			// voteする
-			std::vector<float> histogram1(y_split[i + 1] - y_split[i], 0);
-			std::vector<float> histogram2(y_split[i + 1] - y_split[i], 0);
-			int count = 0;
-			for (int j = 0; j < x_split.size() - 1; ++j) {
-				if (!winpos[i][j].valid) continue;
-
-				count++;
-				for (int r = 0; r < histogram1.size(); ++r) {
-					histogram1[r] += utils::gause(winpos[i][j].top - r, 2);
-					histogram2[r] += utils::gause(winpos[i][j].bottom - r, 2);
-				}
-			}
-
-			if (count == 0) continue;
-
-			// max voteを探す
-			float max_val1 = 0.0f;
-			float max_val2 = 0.0f;
-			for (int r = 0; r < histogram1.size(); ++r) {
-				if (histogram1[r] > max_val1) {
-					max_val1 = histogram1[r];
-					max_top = r;
-				}
-				if (histogram2[r] > max_val2) {
-					max_val2 = histogram2[r];
-					max_bottom = r;
-				}
-			}
-
-			// 全てのカラムの窓のY座標をそろえる
-			for (int c = 0; c < x_split.size() - 1; ++c) {
-				if (!winpos[i][c].valid) continue;
-
-				winpos[i][c].top = max_top;
-				winpos[i][c].bottom = max_bottom;
+		cv::Mat samples(raw_samples.size(), 3, CV_32F);
+		for (int i = 0; i < raw_samples.size(); ++i) {
+			for (int k = 0; k < 3; ++k) {
+				samples.at<float>(i, k) = raw_samples[i][k];
 			}
 		}
+
+		cv::Mat labels;
+		int attempts = 5;
+		cv::Mat centers;
+		cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001), attempts, cv::KMEANS_PP_CENTERS, centers);
+		std::vector<int> hist(centers.rows, 0);
+		for (int i = 0; i < labels.rows; ++i) {
+			int l = labels.at<int>(i, 0);
+			hist[l]++;
+		}
+
+		int max_count = 0;
+		int max_idx = -1;
+		for (int i = 0; i < hist.size(); ++i) {
+			if (hist[i] > max_count) {
+				max_count = hist[i];
+				max_idx = i;
+			}
+		}
+
+		cv::Scalar max_color(0, 0, 0);
+		for (int k = 0; k < 3; ++k) {
+			max_color[k] = centers.at<float>(max_idx, k);
+		}
+
+		cv::Mat temp(1, 1, CV_8UC3, max_color);
+		cv::cvtColor(temp, temp, cv::COLOR_Lab2BGR);
+		cv::Vec3b rgb_col = temp.at<cv::Vec3b>(0, 0);
+
+		return cv::Scalar(rgb_col[2], rgb_col[1], rgb_col[0]);
 	}
 
 	bool isLocalMinimum(const cv::Mat& mat, int index, float threshold) {
@@ -946,28 +911,39 @@ namespace fs {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// visualization
 
-	void generateWindowImage(std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, cv::Size window_img_size, cv::Mat& window_img) {
+	/**
+	 * Generate window image
+	 * Add window boundary lines on top of the given image.
+	 *
+	 * @param y_splits
+	 * @param x_splits
+	 * @param win_rects
+	 * @param line_width
+	 * @param line_color
+	 * @param window_img
+	 */
+	void generateWindowImage(std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, int line_width, const cv::Scalar& line_color, cv::Mat& window_img) {
 		int img_width = x_splits.back() + 1;
 		int img_height = y_splits.back() + 1;
 
 		// resize the window coordinates
 		for (int i = 0; i < win_rects.size(); ++i) {
 			for (int j = 0; j < win_rects[i].size(); ++j) {
-				win_rects[i][j].left = win_rects[i][j].left * (float)window_img_size.width / img_width;
-				win_rects[i][j].right = win_rects[i][j].right * (float)window_img_size.width / img_width;
-				win_rects[i][j].top = win_rects[i][j].top * (float)window_img_size.height / img_height;
-				win_rects[i][j].bottom = win_rects[i][j].bottom * (float)window_img_size.height / img_height;
+				win_rects[i][j].left = win_rects[i][j].left * (float)window_img.cols / img_width;
+				win_rects[i][j].right = win_rects[i][j].right * (float)window_img.cols / img_width;
+				win_rects[i][j].top = win_rects[i][j].top * (float)window_img.rows / img_height;
+				win_rects[i][j].bottom = win_rects[i][j].bottom * (float)window_img.rows / img_height;
 			}
 		}
 		for (int i = 0; i < x_splits.size(); ++i) {
-			x_splits[i] = x_splits[i] * (float)window_img_size.width / img_width;
+			x_splits[i] = x_splits[i] * (float)window_img.cols / img_width;
 		}
 		for (int i = 0; i < y_splits.size(); ++i) {
-			y_splits[i] = y_splits[i] * (float)window_img_size.height / img_height;
+			y_splits[i] = y_splits[i] * (float)window_img.rows / img_height;
 		}
 
 		// generate window image with specified size
-		window_img = cv::Mat(window_img_size, CV_8UC3, cv::Scalar(255, 255, 255));
+		//window_img = cv::Mat(window_img_size, CV_8UC3, cv::Scalar(255, 255, 255));
 		for (int i = 0; i < y_splits.size() - 1; ++i) {
 			for (int j = 0; j < x_splits.size() - 1; ++j) {
 				if (win_rects[i][j].valid == fs::WindowPos::VALID) {
@@ -975,9 +951,30 @@ namespace fs {
 					int y = std::round(y_splits[i] + win_rects[i][j].top);
 					int w = std::round(win_rects[i][j].right - win_rects[i][j].left + 1);
 					int h = std::round(win_rects[i][j].bottom - win_rects[i][j].top + 1);
-					cv::rectangle(window_img, cv::Rect(x, y, w, h), cv::Scalar(0, 0, 0), 1);
+					cv::rectangle(window_img, cv::Rect(x, y, w, h), line_color, line_width);
 				}
 			}
+		}
+	}
+
+	void generateFacadeSubdivisionImage(std::vector<float> y_splits, std::vector<float> x_splits, int line_width, const cv::Scalar& line_color, cv::Mat& result_img) {
+		int img_width = x_splits.back() + 1;
+		int img_height = y_splits.back() + 1;
+
+		// resize the split line coordinates
+		for (int i = 0; i < x_splits.size(); ++i) {
+			x_splits[i] = x_splits[i] * (float)result_img.cols / img_width;
+		}
+		for (int i = 0; i < y_splits.size(); ++i) {
+			y_splits[i] = y_splits[i] * (float)result_img.rows / img_height;
+		}
+
+		// generate subdivision image
+		for (int i = 0; i < y_splits.size(); ++i) {
+			cv::line(result_img, cv::Point(0, y_splits[i]), cv::Point(result_img.cols, y_splits[i]), line_color, line_width);
+		}
+		for (int i = 0; i < x_splits.size(); ++i) {
+			cv::line(result_img, cv::Point(x_splits[i], 0), cv::Point(x_splits[i], result_img.rows), line_color, line_width);
 		}
 	}
 

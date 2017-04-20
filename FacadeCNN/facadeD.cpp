@@ -1,8 +1,8 @@
 ﻿#include "facadeD.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeD::range_NF = std::make_pair(4, 40);
-std::pair<int, int> FacadeD::range_NC = std::make_pair(3, 40);
+std::pair<int, int> FacadeD::range_NF = std::make_pair(4, 20);
+std::pair<int, int> FacadeD::range_NC = std::make_pair(3, 20);
 
 cv::Mat FacadeD::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -12,8 +12,8 @@ cv::Mat FacadeD::generateFacade(int width, int height, int thickness, int max_NF
 }
 
 void FacadeD::decodeParams(float width, float height, int max_NF, int max_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
-	if (max_NF < 5) max_NF = 5;
-	if (max_NC < 1) max_NC = 1;
+	if (max_NF < 4) max_NF = 4;
+	if (max_NC < 3) max_NC = 3;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
@@ -256,6 +256,8 @@ cv::Mat FacadeD::generateFacade(float scale, int width, int height, int thicknes
 	int NF = std::round((float)(height - AH - GH - FH2) / FH) + 3;
 	int NC = std::round((float)(width - SW * 2) / TW);
 	int ND = std::round((float)(width - SW * 2) / GW);
+
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
 
 	// １Fのドアを描画
 	for (int j = 0; j < ND; ++j) {

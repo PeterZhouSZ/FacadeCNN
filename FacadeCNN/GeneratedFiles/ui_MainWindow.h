@@ -38,6 +38,7 @@ public:
     QAction *actionParameterEstimationWithCameraCalibration;
     QAction *actionGenerateTrainingImages;
     QAction *actionParameterEstimation;
+    QAction *actionGenerateTrainingImagesFromExamples;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -74,6 +75,8 @@ public:
         actionGenerateTrainingImages->setObjectName(QStringLiteral("actionGenerateTrainingImages"));
         actionParameterEstimation = new QAction(MainWindowClass);
         actionParameterEstimation->setObjectName(QStringLiteral("actionParameterEstimation"));
+        actionGenerateTrainingImagesFromExamples = new QAction(MainWindowClass);
+        actionGenerateTrainingImagesFromExamples->setObjectName(QStringLiteral("actionGenerateTrainingImagesFromExamples"));
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -96,8 +99,11 @@ public:
         menuBar->addAction(menuTool->menuAction());
         menuFile->addAction(actionExit);
         menuTool->addAction(actionGenerateTrainingImages);
+        menuTool->addAction(actionGenerateTrainingImagesFromExamples);
+        menuTool->addSeparator();
         menuTool->addAction(actionParameterEstimationAll);
         menuTool->addAction(actionParameterEstimation);
+        menuTool->addSeparator();
 
         retranslateUi(MainWindowClass);
 
@@ -124,6 +130,7 @@ public:
         actionParameterEstimationWithCameraCalibration->setText(QApplication::translate("MainWindowClass", "Parameter Estimation with Camera Calibration", 0));
         actionGenerateTrainingImages->setText(QApplication::translate("MainWindowClass", "Generate Training Images", 0));
         actionParameterEstimation->setText(QApplication::translate("MainWindowClass", "Parameter Estimation", 0));
+        actionGenerateTrainingImagesFromExamples->setText(QApplication::translate("MainWindowClass", "Generate Training Images From Examples", 0));
         menuFile->setTitle(QApplication::translate("MainWindowClass", "File", 0));
         menuTool->setTitle(QApplication::translate("MainWindowClass", "Tool", 0));
     } // retranslateUi

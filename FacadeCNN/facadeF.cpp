@@ -1,8 +1,8 @@
 ﻿#include "facadeF.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeF::range_NF = std::make_pair(3, 40);
-std::pair<int, int> FacadeF::range_NC = std::make_pair(3, 40);
+std::pair<int, int> FacadeF::range_NF = std::make_pair(2, 20);
+std::pair<int, int> FacadeF::range_NC = std::make_pair(3, 20);
 
 cv::Mat FacadeF::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -12,7 +12,7 @@ cv::Mat FacadeF::generateFacade(int width, int height, int thickness, int max_NF
 }
 
 void FacadeF::decodeParams(float width, float height, int max_NF, int max_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
-	if (max_NF < 3) max_NF = 3;
+	if (max_NF < 2) max_NF = 2;
 	if (max_NC < 3) max_NC = 3;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
@@ -244,6 +244,8 @@ cv::Mat FacadeF::generateFacade(float scale, int width, int height, int thicknes
 	int NF = std::round((float)(height - AH - GH) / FH) + 1;
 	int NC = std::round((float)(width - SW * 2) / TW) + 2;
 
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
+
 	// １Fのドアを描画
 	{
 		// 左端
@@ -366,31 +368,23 @@ cv::Mat FacadeF::generateFacade(float scale, int width, int height, int thicknes
 }
 
 int FacadeF::clusterWindowTypes(std::vector<std::vector<fs::WindowPos>>& win_rects) {
-	for (int j = 0; j < win_rects[0].size(); j += win_rects[0].size() - 1) {
-		win_rects[0][j].type = 0;
-	}
-
-	for (int j = 1; j < win_rects[0].size() - 1; ++j) {
-		win_rects[0][j].type = 1;
-	}
-
-	for (int i = 1; i < win_rects.size() - 1; ++i) {
+	for (int i = 0; i < win_rects.size() - 1; ++i) {
 		for (int j = 0; j < win_rects[i].size(); j += win_rects[i].size() - 1) {
-			win_rects[i][j].type = 2;
+			win_rects[i][j].type = 0;
 		}
 
 		for (int j = 1; j < win_rects[i].size() - 1; ++j) {
-			win_rects[i][j].type = 3;
+			win_rects[i][j].type = 1;
 		}
 	}
 
 	for (int j = 0; j < win_rects.back().size(); j += win_rects.back().size() - 1) {
-		win_rects.back()[j].type = 4;
+		win_rects.back()[j].type = 2;
 	}
 
 	for (int j = 1; j < win_rects.back().size() - 1; ++j) {
-		win_rects.back()[j].type = 5;
+		win_rects.back()[j].type = 3;
 	}
 
-	return 6;
+	return 4;
 }

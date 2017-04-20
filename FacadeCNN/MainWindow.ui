@@ -34,8 +34,11 @@
      <string>Tool</string>
     </property>
     <addaction name="actionGenerateTrainingImages"/>
+    <addaction name="actionGenerateTrainingImagesFromExamples"/>
+    <addaction name="separator"/>
     <addaction name="actionParameterEstimationAll"/>
     <addaction name="actionParameterEstimation"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTool"/>
@@ -122,6 +125,11 @@
   <action name="actionParameterEstimation">
    <property name="text">
     <string>Parameter Estimation</string>
+   </property>
+  </action>
+  <action name="actionGenerateTrainingImagesFromExamples">
+   <property name="text">
+    <string>Generate Training Images From Examples</string>
    </property>
   </action>
  </widget>

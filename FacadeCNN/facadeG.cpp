@@ -1,8 +1,8 @@
 ﻿#include "facadeG.h"
 #include "Utils.h"
 
-std::pair<int, int> FacadeG::range_NF = std::make_pair(6, 40);
-std::pair<int, int> FacadeG::range_NC = std::make_pair(5, 40);
+std::pair<int, int> FacadeG::range_NF = std::make_pair(6, 20);
+std::pair<int, int> FacadeG::range_NC = std::make_pair(5, 20);
 
 cv::Mat FacadeG::generateFacade(int width, int height, int thickness, int max_NF, int max_NC, const std::vector<float>& params) {
 	std::vector<float> decoded_params;
@@ -12,8 +12,8 @@ cv::Mat FacadeG::generateFacade(int width, int height, int thickness, int max_NF
 }
 
 void FacadeG::decodeParams(float width, float height, int max_NF, int max_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
-	if (max_NF < 3) max_NF = 3;
-	if (max_NC < 3) max_NC = 3;
+	if (max_NF < 6) max_NF = 6;
+	if (max_NC < 5) max_NC = 5;
 
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
@@ -82,8 +82,8 @@ void FacadeG::decodeParams(float width, float height, int max_NF, int max_NC, co
 	decoded_params[23] = DO2;
 	decoded_params[24] = DW2;
 	decoded_params[25] = DI2;
-	decoded_params[26] = TWH;	// 書き出し側でTWT, TWHの順序が逆だったので、
-	decoded_params[27] = TWT;	// それに合わせる。
+	decoded_params[26] = TWT;
+	decoded_params[27] = TWH;
 	decoded_params[28] = TWB;
 }
 
@@ -249,8 +249,8 @@ cv::Mat FacadeG::generateRandomFacade(int width, int height, int thickness, std:
 	params.push_back(DO2 / GH);
 	params.push_back(DW2 / GH);
 	params.push_back(DI2 / GH);
-	params.push_back(TWH / AH);
 	params.push_back(TWT / AH);
+	params.push_back(TWH / AH);
 	params.push_back(TWB / AH);
 
 	return generateFacade(1, width, height, thickness, GH, FH, FH2, AH, SW, TW, WT, WH, WB, WS, WW, WT2, WH2, WB2, WO2, WW2, WI2, DT, DH, DB, DT2, DH2, DB2, DO2, DW2, DI2, TWT, TWH, TWB, window_displacement, window_prob);
@@ -261,6 +261,8 @@ cv::Mat FacadeG::generateFacade(float scale, int width, int height, int thicknes
 
 	int NF = std::round((float)(height - AH - GH - FH2) / FH) + 3;
 	int NC = std::round((float)(width - SW * 2) / TW) + 2;
+
+	window_prob = 1 - utils::genRand(0, 1 - window_prob);
 
 	// １Fのドアを描画
 	{
