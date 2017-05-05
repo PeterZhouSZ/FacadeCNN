@@ -337,28 +337,28 @@ void MainWindow::parameterEstimationAll() {
 		// predictされた画像を作成する
 		cv::Mat predicted_img;
 		if (predictions[0].first == 0) {
-			predicted_img = FacadeA::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeA::generateFacade(img.cols, img.rows, -1, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 1) {
-			predicted_img = FacadeB::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeB::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 2) {
-			predicted_img = FacadeC::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeC::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 3) {
-			predicted_img = FacadeD::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeD::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 4) {
-			predicted_img = FacadeE::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeE::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 5) {
-			predicted_img = FacadeF::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeF::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 6) {
-			predicted_img = FacadeG::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeG::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 		else if (predictions[0].first == 7) {
-			predicted_img = FacadeH::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params);
+			predicted_img = FacadeH::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
 		}
 
 		// make the predicted image blue
@@ -500,13 +500,50 @@ void MainWindow::onParameterEstimation() {
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////////////////////
+	// HACK:
+	// refine the #floors / #columns
+	for (int i = 0; i < y_splits.size() - 1; ++i) {
+		int win_nums = 0;
+		for (int j = 0; j < x_splits.size() - 1; ++j) {
+			if (win_rects[i][j].valid) win_nums++;
+		}
+
+		// if there are too small number of windows detected on this floor,
+		// assume that they are false detection, and remove them.
+		if (win_nums < (float)(x_splits.size() - 1) * 0.3) {
+			for (int j = 0; j < x_splits.size() - 1; ++j) {
+				win_rects[i][j].valid = false;
+			}
+			num_floors--;
+		}
+	}
+	for (int j = 0; j < x_splits.size() - 1; ++j) {
+		int win_nums = 0;
+		for (int i = 0; i < y_splits.size() - 1; ++i) {
+			if (win_rects[i][j].valid) win_nums++;
+		}
+
+		// if there are too small number of windows detected on this column,
+		// assume that they are false detection, and remove them.
+		if (win_nums < (float)(y_splits.size() - 1) * 0.3) {
+			for (int i = 0; i < y_splits.size() - 1; ++i) {
+				win_rects[i][j].valid = false;
+			}
+			num_columns--;
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 	cv::Mat temp2 = facade_img.clone();
 	fs::generateFacadeSubdivisionImage(y_splits, x_splits, 3, cv::Scalar(0, 255, 255), temp2);
 	cv::imwrite("facade_subdivision.png", temp2);
 
 	// DEBUG: generate window image of the original size
-	cv::Mat temp = cv::Mat(facade_img.rows, facade_img.cols, CV_8UC3, cv::Scalar(255, 255, 255));// facade_img.clone();
-	fs::generateWindowImage(y_splits, x_splits, win_rects, 1, cv::Scalar(0, 0, 0), temp);
+	cv::Mat temp = cv::Mat(facade_img.rows, facade_img.cols, CV_8UC3, cv::Scalar(0, 255, 255));// facade_img.clone();
+	fs::generateWindowImage(y_splits, x_splits, win_rects, -1, cv::Scalar(0, 0, 255), temp);
 	cv::imwrite("window.png", temp);
 
 	// generate input image for facade CNN
@@ -525,33 +562,32 @@ void MainWindow::onParameterEstimation() {
 	// parameter estimation
 	std::vector<float> predicted_params = fac_regressions[facade_id]->Predict(input_img);
 	utils::output_vector(predicted_params);
-
 	
 	// predictされた画像を作成する
 	cv::Mat predicted_img;
 	if (facade_id == 0) {
-		predicted_img = FacadeA::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeA::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 1) {
-		predicted_img = FacadeB::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeB::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 2) {
-		predicted_img = FacadeC::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeC::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 3) {
-		predicted_img = FacadeD::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeD::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 4) {
-		predicted_img = FacadeE::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeE::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 5) {
-		predicted_img = FacadeF::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeF::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 6) {
-		predicted_img = FacadeG::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeG::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 	else if (facade_id == 7) {
-		predicted_img = FacadeH::generateFacade(facade_img.cols, facade_img.rows, 1, y_splits.size() - 1, x_splits.size() - 1, predicted_params);
+		predicted_img = FacadeH::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
 	}
 
 #if 0
