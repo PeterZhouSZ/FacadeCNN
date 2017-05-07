@@ -4,18 +4,25 @@
 std::pair<int, int> FacadeE::range_NF = std::make_pair(1, 20);
 std::pair<int, int> FacadeE::range_NC = std::make_pair(5, 20);
 
-cv::Mat FacadeE::generateFacade(int width, int height, int thickness, int default_NF, int default_NC, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeE::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, default_NF, default_NC, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, decoded_params);
 
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15]);
 }
 
-void FacadeE::decodeParams(float width, float height, int default_NF, int default_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeE::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
-	if (default_NF >= 1) NF = default_NF;
+	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
-	if (default_NC >= 5) NC = default_NC;
+	if (NC < range_NC.first) NC = range_NC.first;
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// use the known #floors/#columns if they are provided
+	if (num_floors > 0 && num_columns > 0) {
+		NF = num_floors;
+		NC = num_columns;
+	}
 
 	float GH = (float)height / (params[2] + params[3] * NF + params[4]) * params[2];
 	float FH = (float)height / (params[2] + params[3] * NF + params[4]) * params[3];
@@ -156,7 +163,7 @@ cv::Mat FacadeE::generateRandomFacade(int width, int height, int thickness, std:
 
 cv::Mat FacadeE::generateFacade(float scale, int width, int height, int thickness, const cv::Scalar& bg_color, const cv::Scalar& fg_color, float GH, float FH, float AH, float SW, float TW, float WT, float WH, float WB, float WS, float WW, float WT2, float WH2, float WB2, float WO2, float WW2, float WI2, float window_displacement, float window_prob) {
 	cv::Mat result(height * scale, width * scale, CV_8UC3, bg_color);
-
+	
 	int NF = std::round((float)(height - AH - GH) / FH);
 	int NC = std::round((float)(width - SW * 2) / TW) + 2;
 

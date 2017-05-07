@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>522</width>
-    <height>201</height>
+    <height>175</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,8 +26,8 @@
   <widget class="QPushButton" name="pushButtonCancel">
    <property name="geometry">
     <rect>
-     <x>410</x>
-     <y>160</y>
+     <x>420</x>
+     <y>140</y>
      <width>91</width>
      <height>31</height>
     </rect>
@@ -39,8 +39,8 @@
   <widget class="QPushButton" name="pushButtonOK">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>160</y>
+     <x>320</x>
+     <y>140</y>
      <width>91</width>
      <height>31</height>
     </rect>
@@ -59,7 +59,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Test data directory:</string>
+    <string>Image directory:</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -82,26 +82,39 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>40</y>
+     <y>100</y>
      <width>121</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Output directory:</string>
+    <string>Final parsing output:</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="lineEditOutputDirectory">
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>40</y>
+     <y>100</y>
      <width>341</width>
      <height>20</height>
     </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButtonOutputDirectory">
+   <property name="geometry">
+    <rect>
+     <x>480</x>
+     <y>100</y>
+     <width>31</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>...</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButtonSegmentationOutputDirectory">
    <property name="geometry">
     <rect>
      <x>480</x>
@@ -118,105 +131,59 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>70</y>
+     <y>40</y>
      <width>121</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>#floors:</string>
+    <string>Segmentation output:</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEditNumFloorsMin">
+  <widget class="QLineEdit" name="lineEditSegmentationOutputDirectory">
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>70</y>
-     <width>51</width>
+     <y>40</y>
+     <width>341</width>
      <height>20</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEditNumFloorsMax">
+  <widget class="QPushButton" name="pushButtonInitialOutputDirectory">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>480</x>
      <y>70</y>
-     <width>51</width>
-     <height>20</height>
+     <width>31</width>
+     <height>23</height>
     </rect>
+   </property>
+   <property name="text">
+    <string>...</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_19">
    <property name="geometry">
     <rect>
-     <x>186</x>
-     <y>70</y>
-     <width>16</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>~</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_20">
-   <property name="geometry">
-    <rect>
      <x>10</x>
-     <y>100</y>
+     <y>70</y>
      <width>121</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>#columns:</string>
+    <string>Initial parsing output:</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="lineEditNumColumnsMax">
-   <property name="geometry">
-    <rect>
-     <x>200</x>
-     <y>100</y>
-     <width>51</width>
-     <height>20</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="lineEditNumColumnsMin">
+  <widget class="QLineEdit" name="lineEditInitialOutputDirectory">
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>100</y>
-     <width>51</width>
+     <y>70</y>
+     <width>341</width>
      <height>20</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_21">
-   <property name="geometry">
-    <rect>
-     <x>186</x>
-     <y>100</y>
-     <width>16</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>~</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="checkBoxUseTrueGrammarId">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>130</y>
-     <width>251</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Use true grammar id for parameter estimation</string>
    </property>
   </widget>
  </widget>

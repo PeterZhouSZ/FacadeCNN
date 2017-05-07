@@ -31,6 +31,7 @@ public:
 	void generateTrainingImages();
 	cv::Mat generateFacadeStructure(int facade_grammar_id, int width, int height, std::vector<float>& params, float window_displacement, float window_prob = 1);
 	void parameterEstimationAll();
+	void parseFacade(const QString& input_filename, std::vector<float>& x_splits, std::vector<float>& y_splits, std::vector<std::vector<fs::WindowPos>>& win_rects, cv::Mat& segmentation_result, cv::Mat& initial_result, cv::Mat& final_result);
 	void loadCNNs();
 
 public slots:

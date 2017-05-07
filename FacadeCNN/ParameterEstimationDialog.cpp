@@ -4,14 +4,10 @@
 ParameterEstimationDialog::ParameterEstimationDialog(QWidget *parent) : QDialog(parent) {
 	ui.setupUi(this);
 
-	//ui.lineEditTestDataDirectory->setText("C:/Anaconda/caffe/facade/data");
-	ui.lineEditTestDataDirectory->setText("//cuda.cs.purdue.edu/scratch2/facade/data");
-	ui.lineEditOutputDirectory->setText("results");
-	ui.lineEditNumFloorsMin->setText("1");
-	ui.lineEditNumFloorsMax->setText("20");
-	ui.lineEditNumColumnsMin->setText("1");
-	ui.lineEditNumColumnsMax->setText("20");
-	ui.checkBoxUseTrueGrammarId->setChecked(true);
+	ui.lineEditTestDataDirectory->setText("C:/code/pixel_wise_accuracy/ECP_facade_only/val");
+	ui.lineEditSegmentationOutputDirectory->setText("segmentation");
+	ui.lineEditInitialOutputDirectory->setText("initial_parsing");
+	ui.lineEditOutputDirectory->setText("final_parsing");
 
 	connect(ui.pushButtonTestDataDirectory, SIGNAL(clicked()), this, SLOT(onTestDataDirectory()));
 	connect(ui.pushButtonOutputDirectory, SIGNAL(clicked()), this, SLOT(onOutputDirectory()));

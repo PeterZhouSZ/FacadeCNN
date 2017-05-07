@@ -1,5 +1,7 @@
 ﻿#include "MainWindow.h"
 #include <QFileDialog>
+#include <QDir>
+#include <QFileInfo>
 #include <boost/filesystem.hpp>
 #include "Classifier.h"
 #include "Regression.h"
@@ -19,6 +21,8 @@
 #include <QTextStream>
 #include "FacadeSegmentation.h"
 #include "WindowPositioning.h"
+#include "WindowRecognition.h"
+#include "FacadeReconstruction.h"
 
 #ifndef SQR
 #define SQR(x)	((x) * (x))
@@ -237,171 +241,43 @@ void MainWindow::parameterEstimationAll() {
 
 	loadCNNs();
 
-	QString results_dir = dlg.ui.lineEditOutputDirectory->text() + "/";
-	if (QDir(results_dir).exists()) {
-		QDir(results_dir).removeRecursively();
+	QString segmentation_output_dir = dlg.ui.lineEditSegmentationOutputDirectory->text();
+	if (!QDir(segmentation_output_dir).exists()) {
+		QDir().mkdir(segmentation_output_dir);
 	}
-	if (!QDir().mkdir(results_dir)) {
-		std::cerr << "Output directory, " << dlg.ui.lineEditOutputDirectory->text().toUtf8().constData() << " cannot be created." << std::endl;
-		return;
+	QString initial_output_dir = dlg.ui.lineEditInitialOutputDirectory->text();
+	if (!QDir(initial_output_dir).exists()) {
+		QDir().mkdir(initial_output_dir);
 	}
-
-
-	int correct_classification = 0;
-	int incorrect_classification = 0;
-
-	// read the ground truth of parameter values
-	std::map<int, std::vector<std::vector<float>>> params_truth;
-	for (int i = 0; i < fac_regressions.size(); ++i) {
-		params_truth[i] = std::vector<std::vector<float>>();
-
-		QString file_path = dlg.ui.lineEditTestDataDirectory->text() + QString("/images/%1/parameters.txt").arg(i + 1, 2, 10, QChar('0'));
-
-		QFile file_params(file_path);
-		file_params.open(QIODevice::ReadOnly);
-		QTextStream in_params(&file_params);
-
-		while (true) {
-			QString line = in_params.readLine();
-			if (line.isEmpty()) break;
-
-			QStringList strs = line.split(",");
-
-			std::vector<float> values;
-			for (int j = 0; j < strs.size(); ++j) {
-				values.push_back(strs[j].toFloat());
-			}
-
-			params_truth[i].push_back(values);
-		}
+	QString final_output_dir = dlg.ui.lineEditOutputDirectory->text();
+	if (!QDir(final_output_dir).exists()) {
+		QDir().mkdir(final_output_dir);
 	}
 
-	std::map<int, std::vector<float>> rmse;
-	std::map<int, int> rmse_count;
+	QDir image_dir(dlg.ui.lineEditTestDataDirectory->text());
+	QStringList image_files = image_dir.entryList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden | QDir::AllDirs | QDir::Files, QDir::DirsFirst);
 
-	QFile file(dlg.ui.lineEditTestDataDirectory->text() + "/test.txt");
-	file.open(QIODevice::ReadOnly);
-	QTextStream in(&file);
-	int iter = 0;
 	printf("Predicting: ");
-	while (true) {
-		printf("\rPredicting: %d", iter + 1);
+	for (int i = 0; i < image_files.size(); i++) {
+		printf("\rPredicting: %d", i + 1);
 
-		QString line = in.readLine();
-		QStringList list = line.split(" ");
-		if (list.size() < 2) break;
+		QStringList strs = image_files[i].split(".");
+		if (strs.back() != "png" && strs.back() != "jpg") continue;
 
-		QString file_path = list[0];
-		int grammar_id = list[1].toInt();
-		if (grammar_id >= fac_regressions.size()) continue;
+		std::vector<float> x_splits;
+		std::vector<float> y_splits;
+		std::vector<std::vector<fs::WindowPos>> win_rects;
+		cv::Mat segmentation_result;
+		cv::Mat initial_result;
+		cv::Mat final_result;
+		parseFacade(dlg.ui.lineEditTestDataDirectory->text() + "/" + image_files[i], x_splits, y_splits, win_rects, segmentation_result, initial_result, final_result);
 
-		// obtain file id
-		int index1 = file_path.lastIndexOf("/");
-		int index2 = file_path.indexOf(".", index1);
-		int file_id = file_path.mid(index1 + 1, index2 - index1 - 1).toInt();
+		cv::imwrite((segmentation_output_dir + "/" + strs[0] + ".png").toUtf8().constData(), segmentation_result);
+		cv::imwrite((initial_output_dir + "/" + strs[0] + ".png").toUtf8().constData(), initial_result);
+		cv::imwrite((final_output_dir + "/" + strs[0] + ".png").toUtf8().constData(), final_result);
 
-		// read the test image
-		cv::Mat img = cv::imread((dlg.ui.lineEditTestDataDirectory->text() + "/images/" + file_path).toUtf8().constData());
-
-		// resize the image to 227x227
-		cv::resize(img, img, cv::Size(227, 227));
-
-		// classification
-		std::vector<Prediction> predictions = fac_classifier->Classify(img, fac_regressions.size());
-		if (predictions[0].first == grammar_id) correct_classification++;
-		else incorrect_classification++;
-
-		if (dlg.ui.checkBoxUseTrueGrammarId->isChecked()) {
-			// パラメータ推定のために、正しいgrammar_idを使用する
-			predictions[0].first = grammar_id;
-		}
-
-		if (predictions[0].first >= fac_regressions.size()) continue;
-
-		// parameter estimation
-		std::vector<float> predicted_params = fac_regressions[predictions[0].first]->Predict(img);
-
-		// 誤差を計算
-		if (predictions[0].first == grammar_id) {
-			if (rmse[grammar_id].size() == 0) {
-				rmse[grammar_id].resize(predicted_params.size(), 0);
-				rmse_count[grammar_id] = 0;
-			}
-
-			for (int i = 0; i < predicted_params.size(); ++i) {
-				rmse[grammar_id][i] += SQR(params_truth[grammar_id][file_id][i] - predicted_params[i]);
-			}
-			rmse_count[grammar_id]++;
-		}
-
-		// predictされた画像を作成する
-		cv::Mat predicted_img;
-		if (predictions[0].first == 0) {
-			predicted_img = FacadeA::generateFacade(img.cols, img.rows, -1, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 1) {
-			predicted_img = FacadeB::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 2) {
-			predicted_img = FacadeC::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 3) {
-			predicted_img = FacadeD::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 4) {
-			predicted_img = FacadeE::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 5) {
-			predicted_img = FacadeF::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 6) {
-			predicted_img = FacadeG::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-		else if (predictions[0].first == 7) {
-			predicted_img = FacadeH::generateFacade(img.cols, img.rows, 2, 99, 99, predicted_params, cv::Scalar(255, 255, 255), cv::Scalar(0, 0, 0));
-		}
-
-		// make the predicted image blue
-		for (int r = 0; r < predicted_img.rows; ++r) {
-			for (int c = 0; c < predicted_img.cols; ++c) {
-				cv::Vec3b color = predicted_img.at<cv::Vec3b>(r, c);
-				if (color[0] == 0) {
-					predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 0, 0);
-				}
-				else {
-					predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 255, 255);
-				}
-			}
-		}
-
-		char filename2[256];
-		sprintf(filename2, (results_dir + "%02d_%06d_input.png").toUtf8().constData(), grammar_id + 1, iter);
-		cv::imwrite(filename2, img);
-
-		char filename[256];
-		sprintf(filename, (results_dir + "%02d_%06d_pred.png").toUtf8().constData(), grammar_id + 1, iter);
-		cv::imwrite(filename, predicted_img);
-
-		iter++;
 	}
 	printf("\n");
-
-	std::cout << "--------------------------------------------------" << std::endl;
-	std::cout << "Classification accuracy: " << (float)correct_classification / (correct_classification + incorrect_classification) << std::endl;
-	std::cout << std::endl;
-
-	// 誤差を計算
-	std::cout << "--------------------------------------------------" << std::endl;
-	std::cout << "Parameter estimation RMSE:" << std::endl;
-	for (int i = 0; i < rmse.size(); ++i) {
-		std::cout << "Grammar #" << i + 1 << ":" << std::endl;
-		for (int j = 0; j < rmse[i].size(); ++j) {
-			if (j > 0) std::cout << ", ";
-			rmse[i][j] =  sqrt(rmse[i][j] / rmse_count[i]);
-			std::cout << std::setprecision(4) << rmse[i][j];
-		}
-		std::cout << std::endl;
-	}
 }
 
 void MainWindow::onParameterEstimation() {
@@ -411,7 +287,24 @@ void MainWindow::onParameterEstimation() {
 	loadCNNs();
 	setWindowTitle("Facade CNN - " + filename);
 
-	cv::Mat facade_img = cv::imread(filename.toUtf8().constData());
+	std::vector<float> x_splits;
+	std::vector<float> y_splits;
+	std::vector<std::vector<fs::WindowPos>> win_rects;
+	cv::Mat segmentation_result;
+	cv::Mat initial_result;
+	cv::Mat final_result;
+	parseFacade(filename, x_splits, y_splits, win_rects, segmentation_result, initial_result, final_result);
+
+
+	cv::imwrite("result_segmentation.png", segmentation_result);
+	cv::imwrite("result_initial.png", initial_result);
+	cv::imwrite("result_final.png", final_result);
+
+	canvas->set(filename, y_splits, x_splits, win_rects);
+}
+
+void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& x_splits, std::vector<float>& y_splits, std::vector<std::vector<fs::WindowPos>>& win_rects, cv::Mat& segmentation_result, cv::Mat& initial_result, cv::Mat& final_result) {
+	cv::Mat facade_img = cv::imread(input_filename.toUtf8().constData());
 
 	// floor height / column width
 	cv::Mat resized_facade_img;
@@ -430,13 +323,33 @@ void MainWindow::onParameterEstimation() {
 	//////////////////////////////////////////////////////////////////////////////////
 
 	// subdivide the facade into tiles and windows
-	std::vector<float> x_splits;
-	std::vector<float> y_splits;
-	std::vector<std::vector<fs::WindowPos>> win_rects;
 	fs::subdivideFacade(facade_img, average_floor_height, average_column_width, y_splits, x_splits, win_rects);
-	std::cout << "#floors: " << num_floors << ", #columns: " << num_columns << std::endl;
-	utils::output_vector(x_splits);
 
+	// update #floors and #columns
+	num_floors = y_splits.size() - 1;
+	num_columns = x_splits.size() - 1;
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// DEBUG
+	std::cout << "----------------------------------------------" << std::endl;
+	std::cout << "updated after subdivision:" << std::endl;
+	std::cout << "#floors = " << num_floors << ", #columns = " << num_columns << std::endl;
+	std::cout << "----------------------------------------------" << std::endl;
+	//////////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// DEBUG
+	QFileInfo file_info(input_filename);
+	for (int i = 0; i < y_splits.size() - 1; i++) {
+		for (int j = 0; j < x_splits.size() - 1; j++) {
+			cv::Mat tile_img(facade_img, cv::Rect(x_splits[j], y_splits[i], x_splits[j + 1] - x_splits[j] + 1, y_splits[i + 1] - y_splits[i] + 1));
+			cv::Mat tile_img_resized;
+			cv::resize(tile_img, tile_img_resized, cv::Size(227, 227));
+			QString tile_filename = QString("tiles/" + file_info.baseName() + "_%1_%2.png").arg(i, 2, 10, QChar('0')).arg(j, 2, 10, QChar('0'));
+			cv::imwrite(tile_filename.toUtf8().constData(), tile_img_resized);
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////////////
 
 
 	///////////////
@@ -513,7 +426,7 @@ void MainWindow::onParameterEstimation() {
 		// assume that they are false detection, and remove them.
 		if (win_nums < (float)(x_splits.size() - 1) * 0.3) {
 			for (int j = 0; j < x_splits.size() - 1; ++j) {
-				win_rects[i][j].valid = false;
+				win_rects[i][j].valid = fs::WindowPos::INVALID;
 			}
 			num_floors--;
 		}
@@ -528,28 +441,34 @@ void MainWindow::onParameterEstimation() {
 		// assume that they are false detection, and remove them.
 		if (win_nums < (float)(y_splits.size() - 1) * 0.3) {
 			for (int i = 0; i < y_splits.size() - 1; ++i) {
-				win_rects[i][j].valid = false;
+				win_rects[i][j].valid = fs::WindowPos::INVALID;
 			}
 			num_columns--;
 		}
 	}
+
+	std::cout << "----------------------------------------------" << std::endl;
+	std::cout << "updated after removing non-window floors/columns:" << std::endl;
+	std::cout << "#updated floors = " << num_floors << ", #updated columns = " << num_columns << std::endl;
+	std::cout << "----------------------------------------------" << std::endl;
 	//////////////////////////////////////////////////////////////////////////////////////////
 
 
+	// generate facade segmentation image
+	segmentation_result = facade_img.clone();
+	fs::generateFacadeSubdivisionImage(y_splits, x_splits, 3, cv::Scalar(0, 255, 255), segmentation_result);
 
-	cv::Mat temp2 = facade_img.clone();
-	fs::generateFacadeSubdivisionImage(y_splits, x_splits, 3, cv::Scalar(0, 255, 255), temp2);
-	cv::imwrite("facade_subdivision.png", temp2);
+	// generate initial facade parsing image
+	initial_result = cv::Mat(facade_img.rows, facade_img.cols, CV_8UC3, cv::Scalar(0, 255, 255));
+	fs::generateWindowImage(y_splits, x_splits, win_rects, -1, cv::Scalar(0, 0, 255), initial_result);
 
-	// DEBUG: generate window image of the original size
-	cv::Mat temp = cv::Mat(facade_img.rows, facade_img.cols, CV_8UC3, cv::Scalar(0, 255, 255));// facade_img.clone();
-	fs::generateWindowImage(y_splits, x_splits, win_rects, -1, cv::Scalar(0, 0, 255), temp);
-	cv::imwrite("window.png", temp);
+	cv::Mat initial_facade_parsing = cv::Mat(facade_img.rows, facade_img.cols, CV_8UC3, cv::Scalar(255, 255, 255));// cv::Scalar(0, 255, 255));
+	fs::generateWindowImage(y_splits, x_splits, win_rects, -1, cv::Scalar(0, 0, 0), initial_facade_parsing);
 
 	// generate input image for facade CNN
 	cv::Mat input_img(227, 227, CV_8UC3, cv::Scalar(255, 255, 255));
 	fs::generateWindowImage(y_splits, x_splits, win_rects, 1, cv::Scalar(0, 0, 0), input_img);
-	cv::imwrite("window227.png", input_img);
+	//cv::imwrite("window227.png", input_img);
 
 	// classification
 	std::vector<Prediction> fac_predictions = fac_classifier->Classify(input_img, fac_regressions.size());
@@ -558,146 +477,18 @@ void MainWindow::onParameterEstimation() {
 		std::cout << fac_predictions[i].first << ": " << fac_predictions[i].second << std::endl;
 	}
 	std::cout << "facade grammar: " << facade_id + 1 << std::endl;
-	
+
+
+	// recognize window styles
+	std::vector<int> selected_win_types = winrec::recognition(facade_img, facade_id, y_splits, x_splits, win_rects, win_classifier);
+
+
 	// parameter estimation
-	std::vector<float> predicted_params = fac_regressions[facade_id]->Predict(input_img);
+	std::vector<float> predicted_params = facarec::parameterEstimation(facade_id, fac_regressions[facade_id], input_img, facade_img.cols, facade_img.rows, num_floors, num_columns, initial_facade_parsing, selected_win_types);
 	utils::output_vector(predicted_params);
-	
-	// predictされた画像を作成する
-	cv::Mat predicted_img;
-	if (facade_id == 0) {
-		predicted_img = FacadeA::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 1) {
-		predicted_img = FacadeB::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 2) {
-		predicted_img = FacadeC::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 3) {
-		predicted_img = FacadeD::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 4) {
-		predicted_img = FacadeE::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 5) {
-		predicted_img = FacadeF::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 6) {
-		predicted_img = FacadeG::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
-	else if (facade_id == 7) {
-		predicted_img = FacadeH::generateFacade(facade_img.cols, facade_img.rows, -1, num_floors, num_columns, predicted_params, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255));
-	}
 
-#if 0
-	// make the predicted image blue
-	for (int r = 0; r < predicted_img.rows; ++r) {
-		for (int c = 0; c < predicted_img.cols; ++c) {
-			cv::Vec3b color = predicted_img.at<cv::Vec3b>(r, c);
-			if (color[0] == 0) {
-				predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 0, 0);
-			}
-			else {
-				predicted_img.at<cv::Vec3b>(r, c) = cv::Vec3b(255, 255, 255);
-			}
-		}
-	}
-#endif
-
-	cv::imwrite("result.png", predicted_img);
-
-	canvas->set(filename, y_splits, x_splits, win_rects);
-
-
-#if 1
-	// cluster the tiles based on the grammar
-	int num_window_types;
-	if (facade_id == 0) {
-		num_window_types = FacadeA::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 1) {
-		num_window_types = FacadeB::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 2) {
-		num_window_types = FacadeC::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 3) {
-		num_window_types = FacadeD::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 4) {
-		num_window_types = FacadeE::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 5) {
-		num_window_types = FacadeF::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 6) {
-		num_window_types = FacadeG::clusterWindowTypes(win_rects);
-	}
-	else if (facade_id == 7) {
-		num_window_types = FacadeH::clusterWindowTypes(win_rects);
-	}
-
-	std::cout << "-------------------------------------" << std::endl;
-	std::cout << "facade: " << facade_id + 1 << std::endl;
-	std::cout << "-------------------------------------" << std::endl;
-	std::cout << "window:" << std::endl;
-	std::map<int, std::vector<int>> win_type_votes;
-	for (int i = 0; i < y_splits.size() - 1; ++i) {
-		for (int j = 0; j < x_splits.size() - 1; ++j) {
-			if (j > 0) std::cout << ", ";
-			if (win_rects[i][j].valid == fs::WindowPos::VALID) {
-				int x = x_splits[j];
-				int w = x_splits[j + 1] - x_splits[j];
-				int y = y_splits[i];
-				int h = y_splits[i + 1] - y_splits[i];
-
-				cv::Mat tile_img(facade_img, cv::Rect(x, y, w, h));
-
-				cv::Mat tile_img227;
-				cv::resize(tile_img, tile_img227, cv::Size(227, 227));
-				
-				//////////////////////////////////////////////////////////////////
-				// DEBUG
-				char filename[256];
-				sprintf(filename, "results/tile_%d_%d.png", i, j);
-				cv::imwrite(filename, tile_img227);
-				//////////////////////////////////////////////////////////////////
-
-
-				std::vector<Prediction> win_predictions = win_classifier->Classify(tile_img227, 13);
-				int win_id = win_predictions[0].first;
-				std::cout << win_id + 1 << "(" << win_rects[i][j].type << ")";
-
-				win_type_votes[win_rects[i][j].type].push_back(win_id);
-			}
-			else {
-				std::cout << " " << "(" << win_rects[i][j].type << ")";
-			}
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-
-	// find the maximum vote for each window group
-	std::map<int, int> selected_win_types;
-	for (int i = 0; i < num_window_types; ++i) {
-		std::map<int, int> votes;	// mapping from window type to #votes
-		int max_votes = 0;
-		int selected_win_type = 0;
-
-		for (int k = 0; k < win_type_votes[i].size(); ++k) {
-			votes[win_type_votes[i][k]]++;
-			if (votes[win_type_votes[i][k]] > max_votes) {
-				max_votes = votes[win_type_votes[i][k]];
-				selected_win_type = win_type_votes[i][k];
-			}
-		}
-
-		selected_win_types[i] = selected_win_type;
-		std::cout << "window group=" << i << ": type=" << selected_win_type + 1 << std::endl;
-	}
-#endif
+	// generate final facade parsing image
+	facarec::generateFacadeImage(facade_id, facade_img.cols, facade_img.rows, num_floors, num_columns, predicted_params, selected_win_types, -1, cv::Scalar(0, 255, 255), cv::Scalar(0, 0, 255), final_result);
 }
 
 void MainWindow::loadCNNs() {

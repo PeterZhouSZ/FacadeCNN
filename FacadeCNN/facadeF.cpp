@@ -4,18 +4,25 @@
 std::pair<int, int> FacadeF::range_NF = std::make_pair(2, 20);
 std::pair<int, int> FacadeF::range_NC = std::make_pair(3, 20);
 
-cv::Mat FacadeF::generateFacade(int width, int height, int thickness, int default_NF, int default_NC, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeF::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, std::vector<int>& selected_win_types, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, default_NF, default_NC, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
 
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15], decoded_params[16], decoded_params[17], decoded_params[18], decoded_params[19], decoded_params[20], decoded_params[21], decoded_params[22], decoded_params[23], decoded_params[24], decoded_params[25], decoded_params[26]);
 }
 
-void FacadeF::decodeParams(float width, float height, int default_NF, int default_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeF::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
-	if (default_NF >= 2) NF = default_NF;
+	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
-	if (default_NC >= 3) NC = default_NC;
+	if (NC < range_NC.first) NC = range_NC.first;
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// use the known #floors/#columns if they are provided
+	if (num_floors > 0 && num_columns > 0) {
+		NF = num_floors;
+		NC = num_columns;
+	}
 
 	float GH = (float)height / (params[2] + params[3] * (NF - 1) + params[4]) * params[2];
 	float FH = (float)height / (params[2] + params[3] * (NF - 1) + params[4]) * params[3];
@@ -36,22 +43,34 @@ void FacadeF::decodeParams(float width, float height, int default_NF, int defaul
 	float WW2 = SW / (params[15] + params[16] + params[17]) * params[16];
 	float WI2 = SW / (params[15] + params[16] + params[17]) * params[17];
 
-	float DT = GH / (params[18] + params[19] + params[20]) * params[18];
-	float DH = GH / (params[18] + params[19] + params[20]) * params[19];
-	float DB = GH / (params[18] + params[19] + params[20]) * params[20];
+	float DT, DH, DB;
+	if (selected_win_types[4] < 25) {
+		DT = GH / (params[18] + params[19] + params[20]) * params[18];
+		DH = GH / (params[18] + params[19] + params[20]) * params[19];
+		DB = GH / (params[18] + params[19] + params[20]) * params[20];
+	}
+	else {
+		DT = GH / (params[18] + params[19]) * params[18];
+		DH = GH / (params[18] + params[19]) * params[19];
+		DB = 0.0f;
+	}
 	float DS = TW / (params[21] * 2 + params[22]) * params[21];
 	float DW = TW / (params[21] * 2 + params[22]) * params[22];
-	float DT2 = GH / (params[23] + params[24] + params[25]) * params[23];
-	float DH2 = GH / (params[23] + params[24] + params[25]) * params[24];
-	float DB2 = GH / (params[23] + params[24] + params[25]) * params[25];
+
+	float DT2, DH2, DB2;
+	if (selected_win_types[3] < 25) {
+		DT2 = GH / (params[23] + params[24] + params[25]) * params[23];
+		DH2 = GH / (params[23] + params[24] + params[25]) * params[24];
+		DB2 = GH / (params[23] + params[24] + params[25]) * params[25];
+	}
+	else {
+		DT2 = GH / (params[23] + params[24]) * params[23];
+		DH2 = GH / (params[23] + params[24]) * params[24];
+		DB2 = 0.0f;
+	}
 	float DO2 = SW / (params[26] + params[27] + params[28]) * params[26];
 	float DW2 = SW / (params[26] + params[27] + params[28]) * params[27];
 	float DI2 = SW / (params[26] + params[27] + params[28]) * params[28];
-
-	// HACK
-	DO2 = WO2;
-	DI2 = WI2;
-	DW2 = WW2;
 
 	decoded_params.resize(27);
 	decoded_params[0] = GH;
@@ -369,22 +388,26 @@ cv::Mat FacadeF::generateFacade(float scale, int width, int height, int thicknes
 
 int FacadeF::clusterWindowTypes(std::vector<std::vector<fs::WindowPos>>& win_rects) {
 	for (int i = 0; i < win_rects.size() - 1; ++i) {
-		for (int j = 0; j < win_rects[i].size(); j += win_rects[i].size() - 1) {
-			win_rects[i][j].type = 0;
+		if (win_rects[i].size() > 0) {
+			win_rects[i][0].type = 0;
 		}
 
 		for (int j = 1; j < win_rects[i].size() - 1; ++j) {
 			win_rects[i][j].type = 1;
 		}
+
+		if (win_rects[i].size() > 0) {
+			win_rects[i].back().type = 2;
+		}
 	}
 
 	for (int j = 0; j < win_rects.back().size(); j += win_rects.back().size() - 1) {
-		win_rects.back()[j].type = 2;
-	}
-
-	for (int j = 1; j < win_rects.back().size() - 1; ++j) {
 		win_rects.back()[j].type = 3;
 	}
 
-	return 4;
+	for (int j = 1; j < win_rects.back().size() - 1; ++j) {
+		win_rects.back()[j].type = 4;
+	}
+
+	return 5;
 }

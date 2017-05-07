@@ -4,18 +4,26 @@
 std::pair<int, int> FacadeH::range_NF = std::make_pair(2, 20);
 std::pair<int, int> FacadeH::range_NC = std::make_pair(3, 20);
 
-cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int default_NF, int default_NC, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, default_NF, default_NC, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, decoded_params);
 	
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15], decoded_params[16], decoded_params[17], decoded_params[18], decoded_params[19], decoded_params[20], decoded_params[21]);
 }
 
-void FacadeH::decodeParams(float width, float height, int default_NF, int default_NC, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeH::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
-	if (default_NF >= 2) NF = default_NF;
+	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
-	if (default_NC >= 5) NC = default_NC;
+	if (NC < range_NC.first) NC = range_NC.first;
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// use the known #floors/#columns if they are provided
+	if (num_floors > 0 && num_columns > 0) {
+		NF = num_floors;
+		NC = num_columns;
+	}
+
 	if ((NC - 1) % 2 != 0) NC--;
 
 	float GH = (float)height / (params[2] + params[3] * (NF - 1) + params[4]) * params[2];
@@ -217,8 +225,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 
@@ -237,8 +244,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 
@@ -257,8 +263,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 	}
@@ -280,8 +285,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 
@@ -300,8 +304,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 
@@ -320,8 +323,7 @@ cv::Mat FacadeH::generateFacade(float scale, int width, int height, int thicknes
 			}
 
 			if (utils::genRand() < window_prob) {
-				//cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 0), thickness);
-				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), cv::Scalar(0, 0, 255), -1);
+				cv::rectangle(result, cv::Point(std::round(x1), std::round(y1)), cv::Point(std::round(x2), std::round(y2)), fg_color, thickness);
 			}
 		}
 	}

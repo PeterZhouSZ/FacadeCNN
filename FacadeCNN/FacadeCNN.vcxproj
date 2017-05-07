@@ -217,6 +217,7 @@
     <ClCompile Include="facadeF.cpp" />
     <ClCompile Include="facadeG.cpp" />
     <ClCompile Include="facadeH.cpp" />
+    <ClCompile Include="FacadeReconstruction.cpp" />
     <ClCompile Include="FacadeSegmentation.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_ImageGenerationDialog.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -259,6 +260,7 @@
     <ClCompile Include="Regression.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="WindowPositioning.cpp" />
+    <ClCompile Include="WindowRecognition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\caffelib\caffelib.vcxproj">
@@ -343,10 +345,12 @@
     <ClInclude Include="facadeF.h" />
     <ClInclude Include="facadeG.h" />
     <ClInclude Include="facadeH.h" />
+    <ClInclude Include="FacadeReconstruction.h" />
     <ClInclude Include="FacadeSegmentation.h" />
     <ClInclude Include="GeneratedFiles\ui_ImageGenerationDialog.h" />
     <ClInclude Include="GeneratedFiles\ui_ParameterEstimationDialog.h" />
     <ClInclude Include="WindowPositioning.h" />
+    <ClInclude Include="WindowRecognition.h" />
     <CustomBuild Include="ImageGenerationDialog.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing ImageGenerationDialog.h...</Message>
