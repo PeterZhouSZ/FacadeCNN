@@ -507,7 +507,7 @@ void MainWindow::loadCNNs() {
 	fac_regressions[7] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_08.prototxt", "models/facade/train_08_iter_40000.caffemodel"));
 
 	floors_regression = boost::shared_ptr<Regression>(new Regression("models/floors/deploy_01.prototxt", "models/floors/train_01_iter_40000.caffemodel"));
-	win_exist_classifier = boost::shared_ptr<Classifier>(new Classifier("models/window_existence/deploy.prototxt", "models/window_existence/train_iter_80000.caffemodel", "models/window_existence/mean.binaryproto"));
+	win_exist_classifier = boost::shared_ptr<Classifier>(new Classifier("models/window_existence/deploy.prototxt", "models/window_existence/train_iter_40000.caffemodel", "models/window_existence/mean.binaryproto"));
 	win_pos_regression = boost::shared_ptr<Regression>(new Regression("models/window_position/deploy_01.prototxt", "models/window_position/train_01_iter_80000.caffemodel"));
 	win_classifier = boost::shared_ptr<Classifier>(new Classifier("models/window/deploy.prototxt", "models/window/train_iter_40000.caffemodel", "models/window/mean.binaryproto"));
 

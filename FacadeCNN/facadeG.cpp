@@ -4,7 +4,7 @@
 std::pair<int, int> FacadeG::range_NF = std::make_pair(6, 20);
 std::pair<int, int> FacadeG::range_NC = std::make_pair(5, 20);
 
-cv::Mat FacadeG::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, std::vector<int>& selected_win_types, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeG::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
 	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
 
@@ -51,6 +51,7 @@ void FacadeG::decodeParams(float width, float height, int num_floors, int num_co
 		DB = GH / (params[19] + params[20] + params[21]) * params[21];
 	}
 	else {
+		// remove the gap between the door and the ground
 		DT = GH / (params[19] + params[20]) * params[19];
 		DH = GH / (params[19] + params[20]) * params[20];
 		DB = 0.0f;
@@ -62,6 +63,7 @@ void FacadeG::decodeParams(float width, float height, int num_floors, int num_co
 		DB2 = GH / (params[22] + params[23] + params[24]) * params[24];
 	}
 	else {
+		// remove the gap between the door and the ground
 		DT2 = GH / (params[22] + params[23]) * params[22];
 		DH2 = GH / (params[22] + params[23]) * params[23];
 		DB2 = 0.0f;

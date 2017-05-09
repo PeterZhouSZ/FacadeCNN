@@ -4,14 +4,14 @@
 std::pair<int, int> FacadeD::range_NF = std::make_pair(4, 20);
 std::pair<int, int> FacadeD::range_NC = std::make_pair(3, 20);
 
-cv::Mat FacadeD::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeD::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, num_floors, num_columns, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
 
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15], decoded_params[16], decoded_params[17], decoded_params[18], decoded_params[19], decoded_params[20], decoded_params[21], decoded_params[22], decoded_params[23], decoded_params[24], decoded_params[25], decoded_params[26]);
 }
 
-void FacadeD::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeD::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
@@ -45,9 +45,18 @@ void FacadeD::decodeParams(float width, float height, int num_floors, int num_co
 	float WS2 = TW / (params[17] * 2 + params[18]) * params[17];
 	float WW2 = TW / (params[17] * 2 + params[18]) * params[18];
 
-	float DT = GH / (params[19] + params[20] + params[21]) * params[19];
-	float DH = GH / (params[19] + params[20] + params[21]) * params[20];
-	float DB = GH / (params[19] + params[20] + params[21]) * params[21];
+	float DT, DH, DB;
+	if (selected_win_types[3] < 25) {
+		DT = GH / (params[19] + params[20] + params[21]) * params[19];
+		DH = GH / (params[19] + params[20] + params[21]) * params[20];
+		DB = GH / (params[19] + params[20] + params[21]) * params[21];
+	}
+	else {
+		// remove the gap between the door and the ground
+		DT = GH / (params[19] + params[20]) * params[19];
+		DH = GH / (params[19] + params[20]) * params[20];
+		DB = 0.0f;
+	}
 	float DS = GW / (params[22] * 2 + params[23]) * params[22];
 	float DW = GW / (params[22] * 2 + params[23]) * params[23];
 

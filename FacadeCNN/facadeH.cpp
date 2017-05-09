@@ -4,14 +4,14 @@
 std::pair<int, int> FacadeH::range_NF = std::make_pair(2, 20);
 std::pair<int, int> FacadeH::range_NC = std::make_pair(3, 20);
 
-cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeH::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, num_floors, num_columns, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
 	
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15], decoded_params[16], decoded_params[17], decoded_params[18], decoded_params[19], decoded_params[20], decoded_params[21]);
 }
 
-void FacadeH::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeH::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
@@ -45,12 +45,31 @@ void FacadeH::decodeParams(float width, float height, int num_floors, int num_co
 	float WS2 = TW2 / (params[16] * 2 + params[17]) * params[16];
 	float WW2 = TW2 / (params[16] * 2 + params[17]) * params[17];
 
-	float DT = GH / (params[18] + params[19] + params[20]) * params[18];
-	float DH = GH / (params[18] + params[19] + params[20]) * params[19];
-	float DB = GH / (params[18] + params[19] + params[20]) * params[20];
-	float DT2 = GH / (params[21] + params[22] + params[23]) * params[21];
-	float DH2 = GH / (params[21] + params[22] + params[23]) * params[22];
-	float DB2 = GH / (params[21] + params[22] + params[23]) * params[23];
+	float DT, DH, DB;
+	if (selected_win_types[3] < 25) {
+		DT = GH / (params[18] + params[19] + params[20]) * params[18];
+		DH = GH / (params[18] + params[19] + params[20]) * params[19];
+		DB = GH / (params[18] + params[19] + params[20]) * params[20];
+	}
+	else {
+		// remove the gap between the door and the ground
+		DT = GH / (params[18] + params[19]) * params[18];
+		DH = GH / (params[18] + params[19]) * params[19];
+		DB = 0.0f;
+	}
+
+	float DT2, DH2, DB2;
+	if (selected_win_types[2] < 25) {
+		DT2 = GH / (params[21] + params[22] + params[23]) * params[21];
+		DH2 = GH / (params[21] + params[22] + params[23]) * params[22];
+		DB2 = GH / (params[21] + params[22] + params[23]) * params[23];
+	}
+	else {
+		// remove the gap between the door and the ground
+		DT2 = GH / (params[21] + params[22]) * params[21];
+		DH2 = GH / (params[21] + params[22]) * params[22];
+		DB = 0.0f;
+	}
 
 	decoded_params.resize(22);
 	decoded_params[0] = GH;

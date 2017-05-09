@@ -4,14 +4,14 @@
 std::pair<int, int> FacadeC::range_NF = std::make_pair(3, 20);
 std::pair<int, int> FacadeC::range_NC = std::make_pair(4, 20);
 
-cv::Mat FacadeC::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
+cv::Mat FacadeC::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
-	decodeParams(width, height, num_floors, num_columns, params, decoded_params);
+	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
 
 	return generateFacade(1, width, height, thickness, bg_color, fg_color, decoded_params[0], decoded_params[1], decoded_params[2], decoded_params[3], decoded_params[4], decoded_params[5], decoded_params[6], decoded_params[7], decoded_params[8], decoded_params[9], decoded_params[10], decoded_params[11], decoded_params[12], decoded_params[13], decoded_params[14], decoded_params[15], decoded_params[16], decoded_params[17], decoded_params[18], decoded_params[19], decoded_params[20]);
 }
 
-void FacadeC::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<float>& decoded_params) {
+void FacadeC::decodeParams(float width, float height, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, std::vector<float>& decoded_params) {
 	int NF = std::round(params[0] * (range_NF.second - range_NF.first) + range_NF.first);
 	if (NF < range_NF.first) NF = range_NF.first;
 	int NC = std::round(params[1] * (range_NC.second - range_NC.first) + range_NC.first);
@@ -37,10 +37,19 @@ void FacadeC::decodeParams(float width, float height, int num_floors, int num_co
 	float WB = FH / (params[8] + params[9] + params[10]) * params[10];
 	float WS = TW / (params[11] * 2 + params[12]) * params[11];
 	float WW = TW / (params[11] * 2 + params[12]) * params[12];
-
-	float DT = GH / (params[13] + params[14] + params[15]) * params[13];
-	float DH = GH / (params[13] + params[14] + params[15]) * params[14];
-	float DB = GH / (params[13] + params[14] + params[15]) * params[15];
+	
+	float DT, DH, DB;
+	if (selected_win_types[2] < 25) {
+		DT = GH / (params[13] + params[14] + params[15]) * params[13];
+		DH = GH / (params[13] + params[14] + params[15]) * params[14];
+		DB = GH / (params[13] + params[14] + params[15]) * params[15];
+	}
+	else {
+		// remove the gap between the door and the ground
+		DT = GH / (params[13] + params[14]) * params[13];
+		DH = GH / (params[13] + params[14]) * params[14];
+		DB = 0.0f;
+	}
 	float DS = GW / (params[16] * 2 + params[17]) * params[16];
 	float DW = GW / (params[16] * 2 + params[17]) * params[17];
 
