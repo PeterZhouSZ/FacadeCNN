@@ -4,6 +4,24 @@
 std::pair<int, int> FacadeF::range_NF = std::make_pair(2, 20);
 std::pair<int, int> FacadeF::range_NC = std::make_pair(3, 20);
 
+void FacadeF::attachDoors(std::vector<float>& params, const std::vector<int>& selected_win_types) {
+	if (selected_win_types[3] < 25) {
+		// do nothing
+	}
+	else {
+		// remove the gap between the door and the ground
+		params[20] = 0;
+	}
+
+	if (selected_win_types[2] < 25) {
+		// do nothing
+	}
+	else {
+		// remove the gap between the door and the ground
+		params[25] = 0;
+	}
+}
+
 cv::Mat FacadeF::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
 	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
@@ -44,7 +62,7 @@ void FacadeF::decodeParams(float width, float height, int num_floors, int num_co
 	float WI2 = SW / (params[15] + params[16] + params[17]) * params[17];
 
 	float DT, DH, DB;
-	if (selected_win_types[4] < 25) {
+	if (selected_win_types[3] < 25) {
 		DT = GH / (params[18] + params[19] + params[20]) * params[18];
 		DH = GH / (params[18] + params[19] + params[20]) * params[19];
 		DB = GH / (params[18] + params[19] + params[20]) * params[20];
@@ -59,7 +77,7 @@ void FacadeF::decodeParams(float width, float height, int num_floors, int num_co
 	float DW = TW / (params[21] * 2 + params[22]) * params[22];
 
 	float DT2, DH2, DB2;
-	if (selected_win_types[3] < 25) {
+	if (selected_win_types[2] < 25) {
 		DT2 = GH / (params[23] + params[24] + params[25]) * params[23];
 		DH2 = GH / (params[23] + params[24] + params[25]) * params[24];
 		DB2 = GH / (params[23] + params[24] + params[25]) * params[25];
@@ -390,25 +408,21 @@ cv::Mat FacadeF::generateFacade(float scale, int width, int height, int thicknes
 
 int FacadeF::clusterWindowTypes(std::vector<std::vector<fs::WindowPos>>& win_rects) {
 	for (int i = 0; i < win_rects.size() - 1; ++i) {
-		if (win_rects[i].size() > 0) {
-			win_rects[i][0].type = 0;
+		for (int j = 0; j < win_rects[i].size(); j += win_rects[i].size() - 1) {
+			win_rects[i][j].type = 0;
 		}
 
 		for (int j = 1; j < win_rects[i].size() - 1; ++j) {
 			win_rects[i][j].type = 1;
 		}
-
-		if (win_rects[i].size() > 0) {
-			win_rects[i].back().type = 2;
-		}
 	}
 
 	for (int j = 0; j < win_rects.back().size(); j += win_rects.back().size() - 1) {
-		win_rects.back()[j].type = 3;
+		win_rects.back()[j].type = 2;
 	}
 
 	for (int j = 1; j < win_rects.back().size() - 1; ++j) {
-		win_rects.back()[j].type = 4;
+		win_rects.back()[j].type = 3;
 	}
 
 	return 5;

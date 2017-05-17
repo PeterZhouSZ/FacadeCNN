@@ -25,7 +25,7 @@ namespace facarec {
 	double obj_function::operator() (const column_vector& arg) const {
 		std::vector<float> params;
 		for (int k = 0; k < arg.size(); ++k) {
-			params.push_back(arg(k, 0));
+			params.push_back(std::max(0.0, arg(k, 0)));
 		}
 
 		cv::Mat result_img;
@@ -89,6 +89,10 @@ namespace facarec {
 
 	std::vector<float> parameterEstimation(int grammar_id, boost::shared_ptr<Regression> regression, const cv::Mat& input_image, float width, float height, int num_floors, int num_columns, const cv::Mat& initial_facade_parsing, std::vector<int>& selected_win_types) {
 		std::vector<float> params = regression->Predict(input_image);
+		for (int i = 2; i < params.size(); i++) {
+			params[i] = std::max(0.0f, params[i]);
+		}
+		utils::output_vector(params);
 
 #if 1
 		/////////////////////////////////////////////////////////////////////////////
@@ -103,7 +107,7 @@ namespace facarec {
 		}
 
 		try {
-			find_min_bobyqa(obj_function(grammar_id, initial_facade_parsing, num_floors, num_columns, selected_win_types),
+			double dist = find_min_bobyqa(obj_function(grammar_id, initial_facade_parsing, num_floors, num_columns, selected_win_types),
 				starting_point,
 				params.size() * 4,
 				lower_bound,
@@ -112,6 +116,7 @@ namespace facarec {
 				0.001,
 				3000
 				);
+			std::cout << "Final dist after optimization: " << dist << std::endl;
 		}
 		catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
@@ -121,6 +126,35 @@ namespace facarec {
 			params[k] = starting_point(k, 0);
 		}
 #endif
+
+		for (int i = 2; i < params.size(); i++) {
+			params[i] = std::max(0.0f, params[i]);
+		}
+
+		if (grammar_id == 0) {
+			FacadeA::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 1) {
+			FacadeB::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 2) {
+			FacadeC::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 3) {
+			FacadeD::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 4) {
+			FacadeE::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 5) {
+			FacadeF::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 6) {
+			FacadeG::attachDoors(params, selected_win_types);
+		}
+		else if (grammar_id == 7) {
+			FacadeH::attachDoors(params, selected_win_types);
+		}
 
 		return params;
 	}

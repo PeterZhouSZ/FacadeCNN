@@ -476,6 +476,16 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	for (int i = 0; i < fac_predictions.size(); ++i) {
 		std::cout << fac_predictions[i].first << ": " << fac_predictions[i].second << std::endl;
 	}
+	// HACK: for facade grammar recognition
+	// It is better to have different style for the 1st floor unless the number of floors is 1.
+	if (num_floors >= 2) {
+		if (facade_id == 0) {
+			facade_id = 1;
+		}
+		if (facade_id == 4) {
+			facade_id = 5;
+		}
+	}
 	std::cout << "facade grammar: " << facade_id + 1 << std::endl;
 
 

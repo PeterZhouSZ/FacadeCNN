@@ -4,6 +4,16 @@
 std::pair<int, int> FacadeC::range_NF = std::make_pair(3, 20);
 std::pair<int, int> FacadeC::range_NC = std::make_pair(4, 20);
 
+void FacadeC::attachDoors(std::vector<float>& params, const std::vector<int>& selected_win_types) {
+	if (selected_win_types[2] < 25) {
+		// do nothing
+	}
+	else {
+		// remove the gap between the door and the ground
+		params[15] = 0;
+	}
+}
+
 cv::Mat FacadeC::generateFacade(int width, int height, int thickness, int num_floors, int num_columns, const std::vector<float>& params, std::vector<int>& selected_win_types, const cv::Scalar& bg_color, const cv::Scalar& fg_color) {
 	std::vector<float> decoded_params;
 	decodeParams(width, height, num_floors, num_columns, params, selected_win_types, decoded_params);
