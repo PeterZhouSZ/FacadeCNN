@@ -416,7 +416,7 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	//////////////////////////////////////////////////////////////////////////////////////////
 	// HACK:
 	// refine the #floors / #columns
-	for (int i = 0; i < y_splits.size() - 1; ++i) {
+	for (int i = 0; i < y_splits.size() - 1;) {
 		int win_nums = 0;
 		for (int j = 0; j < x_splits.size() - 1; ++j) {
 			if (win_rects[i][j].valid) win_nums++;
@@ -429,6 +429,16 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 				win_rects[i][j].valid = fs::WindowPos::INVALID;
 			}
 			num_floors--;
+			if (i < y_splits.size() - 2) {
+				y_splits.erase(y_splits.begin() + i + 1);
+			}
+			else {
+				y_splits.erase(y_splits.begin() + i);
+			}
+			win_rects.erase(win_rects.begin() + i);
+		}
+		else {
+			i++;
 		}
 	}
 	for (int j = 0; j < x_splits.size() - 1; ++j) {
