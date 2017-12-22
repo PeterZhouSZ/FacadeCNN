@@ -36,7 +36,6 @@ public:
 
 public slots:
 	void onGenerateTrainingImages();
-	void onGenerateTrainingImagesFromExamples();
 	void onParameterEstimationAll();
 	void onParameterEstimation();
 };

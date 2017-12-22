@@ -34,7 +34,6 @@
      <string>Tool</string>
     </property>
     <addaction name="actionGenerateTrainingImages"/>
-    <addaction name="actionGenerateTrainingImagesFromExamples"/>
     <addaction name="separator"/>
     <addaction name="actionParameterEstimationAll"/>
     <addaction name="actionParameterEstimation"/>

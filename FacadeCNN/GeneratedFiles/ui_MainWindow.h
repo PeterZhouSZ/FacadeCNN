@@ -99,7 +99,6 @@ public:
         menuBar->addAction(menuTool->menuAction());
         menuFile->addAction(actionExit);
         menuTool->addAction(actionGenerateTrainingImages);
-        menuTool->addAction(actionGenerateTrainingImagesFromExamples);
         menuTool->addSeparator();
         menuTool->addAction(actionParameterEstimationAll);
         menuTool->addAction(actionParameterEstimation);

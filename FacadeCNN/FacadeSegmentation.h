@@ -22,6 +22,7 @@ namespace fs {
 	};
 
 	void subdivideFacade(cv::Mat img, float floor_height, float column_width, std::vector<float>& y_split, std::vector<float>& x_split, std::vector<std::vector<WindowPos>>& win_rects);
+	int findLocalMin(const cv::Mat_<float>& Ver, int index);
 	std::vector<float> findBoundaries(const cv::Mat& img, cv::Range range1, cv::Range range2, int num_splits, const cv::Mat_<float>& Ver);
 	bool sortBySecondValue(const std::pair<float, float>& a, const std::pair<float, float>& b);
 	void sortByS(std::vector<float>& splits, std::map<int, float>& S_max);
@@ -36,7 +37,8 @@ namespace fs {
 	void getSplitLines(const cv::Mat_<float>& mat, float threshold, std::vector<float>& split_positions);
 	void refineSplitLines(std::vector<float>& split_positions, float threshold);
 	void distributeSplitLines(std::vector<float>& split_positions, float threshold);
-	cv::Scalar getDominantColor(const cv::Mat& img, std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, int clusterCount);
+	cv::Scalar getDominantColor(const cv::Mat& img, int cluster_count);
+	void getWallImage(cv::Mat img, std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, cv::Mat& result);
 	bool isLocalMinimum(const cv::Mat& mat, int index, float threshold);
 
 	// visualization

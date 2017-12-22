@@ -36,7 +36,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	connect(ui.actionGenerateTrainingImages, SIGNAL(triggered()), this, SLOT(onGenerateTrainingImages()));
-	connect(ui.actionGenerateTrainingImagesFromExamples, SIGNAL(triggered()), this, SLOT(onGenerateTrainingImagesFromExamples()));
 	connect(ui.actionParameterEstimationAll, SIGNAL(triggered()), this, SLOT(onParameterEstimationAll()));
 	connect(ui.actionParameterEstimation, SIGNAL(triggered()), this, SLOT(onParameterEstimation()));
 
@@ -154,87 +153,6 @@ cv::Mat MainWindow::generateFacadeStructure(int facade_grammar_id, int width, in
 	return result;
 }
 
-void MainWindow::onGenerateTrainingImagesFromExamples() {
-	QDir dir("examples");
-	if (dir.exists()) {
-		QStringList folder_list = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-
-		for (int i = 0; i < folder_list.size(); ++i) {
-			std::cout << folder_list[i].toUtf8().constData() << std::endl;
-
-			// set the target dir
-			QString target_dir = "//cuda.cs.purdue.edu/scratch2/facade/data/images/" + folder_list[i] + "/000001/";
-			if (!QDir(target_dir).exists()) {
-				QDir().mkdir(target_dir);
-			}
-
-			// open the target parameter file
-			QFile target_param_file("//cuda.cs.purdue.edu/scratch2/facade/data/images/" + folder_list[i] + "/parameters.txt");
-			target_param_file.open(QIODevice::Append);
-			QTextStream target_param_out(&target_param_file);
-
-			// read parameter file
-			QMap<QString, std::vector<float>> params;
-			QFile param_file(dir.dirName() + "/" + folder_list[i] + "/parameters.txt");
-			param_file.open(QIODevice::ReadOnly);
-			QTextStream in(&param_file);
-			while (!in.atEnd()) {
-				QStringList list = in.readLine().split(",");
-				if (list.size() <= 1) continue;
-
-				for (int k = 1; k < list.size(); ++k) {
-					params[list[0]].push_back(list[k].toFloat());
-				}
-			}
-			param_file.close();
-
-			QDir subdir(dir.dirName() + "/" + folder_list[i]);
-			QStringList file_list = subdir.entryList(QStringList() << "*.png", QDir::Files);
-
-			int cnt = 10000;
-			foreach (QString filename, file_list) {
-				cv::Mat orig_img = cv::imread((subdir.absolutePath() + "/" + filename).toUtf8().constData());
-
-				for (int iter = 0; iter < 100; ++iter) {
-					cv::Mat img = orig_img.clone();
-
-					// crop
-					int crop_x1 = utils::genRand(0, 3);
-					int crop_y1 = utils::genRand(0, 3);
-					int crop_x2 = img.cols - 1 - utils::genRand(0, 3);
-					int crop_y2 = img.rows - 1 - utils::genRand(0, 3);
-
-					img = cv::Mat(img, cv::Rect(crop_x1, crop_y1, crop_x2 - crop_x1 + 1, crop_y2 - crop_y1 + 1));
-
-					// mirror
-					if (utils::genRand() < 0.5) {
-						cv::flip(img, img, 1);
-					}
-
-					// resize
-					cv::resize(img, img, cv::Size(227, 227));
-
-					// set the file name
-					QString new_file_name = target_dir + QString("%1.png").arg(cnt++, 6, 10, QChar('0'));
-
-					// save the image
-					cv::imwrite(new_file_name.toUtf8().constData(), img);
-
-					// save the parameter values
-					for (int k = 0; k < params[filename].size(); ++k) {
-						if (k > 0) target_param_out << ",";
-						target_param_out << params[filename][k];
-					}
-					target_param_out << "\n";
-				}
-			}
-
-			target_param_file.close();
-
-		}
-	}
-}
-
 void MainWindow::parameterEstimationAll() {
 	ParameterEstimationDialog dlg;
 	if (!dlg.exec()) return;
@@ -309,6 +227,8 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	// floor height / column width
 	cv::Mat resized_facade_img;
 	cv::resize(facade_img, resized_facade_img, cv::Size(227, 227));
+	cv::cvtColor(resized_facade_img, resized_facade_img, cv::COLOR_BGR2GRAY);
+	cv::cvtColor(resized_facade_img, resized_facade_img, cv::COLOR_GRAY2BGR);
 	std::vector<float> floor_params = floors_regression->Predict(resized_facade_img);
 	int num_floors = std::round(floor_params[0] + 0.3);
 	int num_columns = std::round(floor_params[1] + 0.3);
@@ -326,8 +246,8 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	fs::subdivideFacade(facade_img, average_floor_height, average_column_width, y_splits, x_splits, win_rects);
 
 	// update #floors and #columns
-	num_floors = y_splits.size() - 1;
-	num_columns = x_splits.size() - 1;
+	//num_floors = y_splits.size() - 1;
+	//num_columns = x_splits.size() - 1;
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// DEBUG
@@ -373,9 +293,15 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	}
 #endif
 
+	////////////////////////////////////////////////////////////////////////////////
+	// 2017/8/23
+	// get the facade image excluding windows
+	cv::Mat facade_wall_img;
+	fs::getWallImage(facade_img, y_splits, x_splits, win_rects, facade_wall_img);
+	cv::imwrite("facade_wall.png", facade_wall_img);
 
-	// obtain the dominant facade color
-	cv::Scalar facade_color = fs::getDominantColor(facade_img, y_splits, x_splits, win_rects, 10);
+	// extract a dominant color for the entire region of facade
+	cv::Scalar facade_color = fs::getDominantColor(facade_wall_img, 10);
 	std::cout << "Facade color = (" << facade_color[0] << "," << facade_color[1] << "," << facade_color[2] << ")" << std::endl;
 
 	// gray scale
@@ -512,7 +438,7 @@ void MainWindow::loadCNNs() {
 	fac_regressions[6] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_07.prototxt", "models/facade/train_07_iter_40000.caffemodel"));
 	fac_regressions[7] = boost::shared_ptr<Regression>(new Regression("models/facade/deploy_08.prototxt", "models/facade/train_08_iter_40000.caffemodel"));
 
-	floors_regression = boost::shared_ptr<Regression>(new Regression("models/floors/deploy_01.prototxt", "models/floors/train_01_iter_40000.caffemodel"));
+	floors_regression = boost::shared_ptr<Regression>(new Regression("models/floors/deploy_01.prototxt", "models/floors/train_01_iter_80000.caffemodel"));
 	win_exist_classifier = boost::shared_ptr<Classifier>(new Classifier("models/window_existence/deploy.prototxt", "models/window_existence/train_iter_40000.caffemodel", "models/window_existence/mean.binaryproto"));
 	win_pos_regression = boost::shared_ptr<Regression>(new Regression("models/window_position/deploy_01.prototxt", "models/window_position/train_01_iter_80000.caffemodel"));
 	win_classifier = boost::shared_ptr<Classifier>(new Classifier("models/window/deploy.prototxt", "models/window/train_iter_40000.caffemodel", "models/window/mean.binaryproto"));

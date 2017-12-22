@@ -58,178 +58,52 @@ namespace fs {
 		extractWindows(gray_img, y_splits, x_splits, win_rects);
 	}
 
+	int findLocalMin(const cv::Mat_<float>& Ver, int index) {
+		int low_y = -1;
+		for (int y = index; y >= 0; y--) {
+			if (cvutils::isLocalMinimum(Ver, y, 2)) {
+				low_y = y;
+				break;
+			}
+		}
+
+		int high_y = -1;
+		for (int y = index; y < Ver.rows; y++) {
+			if (cvutils::isLocalMinimum(Ver, y, 2)) {
+				high_y = y;
+				break;
+			}
+		}
+
+		if (low_y >= 0) {
+			if (high_y < 0 || index - low_y < high_y - index) {
+				return low_y;
+			}
+			else {
+				return high_y;
+			}
+		}
+		else {
+			if (high_y >= 0) return high_y;
+			else return -1;
+		}
+	}
+
 	std::vector<float> findBoundaries(const cv::Mat& img, cv::Range range1, cv::Range range2, int num_splits, const cv::Mat_<float>& Ver) {
-		std::vector<std::vector<float>> good_candidates;
+		float floor_height = (float)img.rows / (num_splits - 1);
 
-		// find the local minima of Ver
-		std::vector<float> y_splits_strong;
-		getSplitLines(Ver, 0.5, y_splits_strong);
-
-		// ignore the split lines that are too close to the border
-		if (y_splits_strong.size() > 0 && y_splits_strong[0] < range2.start) {
-			y_splits_strong.erase(y_splits_strong.begin());
-		}
-		if (y_splits_strong.size() > 0 && img.rows - 1 - y_splits_strong.back() < range2.start) {
-			y_splits_strong.pop_back();
+		std::vector<float> y_splits(num_splits - 2);
+		float cur_y = floor_height;
+		for (int i = 0; i < y_splits.size(); i++) {
+			y_splits[i] = cur_y;
+			cur_y += floor_height;
 		}
 
-		for (int iter = 0; iter < 2; ++iter) {
-			// find the local minima of Ver
-			std::vector<float> y_splits;
-			getSplitLines(Ver, 0.05 / (iter + 1), y_splits);
-
-			// check whether each split is strong or not
-			std::map<float, bool> is_strong;
-			for (int i = 0; i < y_splits.size(); ++i) {
-				if (std::find(y_splits_strong.begin(), y_splits_strong.end(), y_splits[i]) != y_splits_strong.end()) {
-					is_strong[y_splits[i]] = true;
-				}
-				else {
-					is_strong[y_splits[i]] = false;
-				}
-			}
-
-			std::list<std::vector<float>> queue;
-			queue.push_back(std::vector<float>(1, 0));
-			while (!queue.empty()) {
-				std::vector<float> list = queue.back();
-				queue.pop_back();
-
-				if (img.rows - list.back() >= range2.start && img.rows - list.back() <= range2.end) {
-					std::vector<float> new_list = list;
-					new_list.push_back(img.rows - 1);
-
-					// Only if the number of splits so far does not exceed the limit,
-					// add this to the candidate list.
-					if (std::abs((int)new_list.size() - num_splits) <= 1) {
-						good_candidates.push_back(new_list);
-					}
-				}
-
-				for (int i = 0; i < y_splits.size(); ++i) {
-					if (y_splits[i] <= list.back()) continue;
-					if (list.size() == 1) {
-						// for the top floor, use the wider range to check
-						if (y_splits[i] - list.back() < range2.start || y_splits[i] - list.back() > range2.end) continue;
-					}
-					else {
-						// for other floors, use the narrower range to check
-						if (y_splits[i] - list.back() < range1.start || y_splits[i] - list.back() > range1.end) continue;
-					}
-
-					std::vector<float> new_list = list;
-					new_list.push_back(y_splits[i]);
-
-					// Only if the number of splits so far does not exceed the limit,
-					// add this to the queue.
-					if ((int)new_list.size() + 1 - num_splits <= 1) {
-						queue.push_back(new_list);
-					}
-
-					// If this split is a strong one, you cannot skip this, so stop here.
-					if (is_strong[y_splits[i]]) {
-						break;
-					}
-				}
-
-			}
-
-			// discard the candidates that have too few strong splits
-			for (int i = 0; i < good_candidates.size(); ) {
-				int num_strong_splits = 0;
-				for (int j = 0; j < good_candidates[i].size(); ++j) {
-					if (is_strong[good_candidates[i][j]]) num_strong_splits++;
-				}
-
-				if ((float)num_strong_splits < y_splits_strong.size() * 0.8) {
-					good_candidates.erase(good_candidates.begin() + i);
-				}
-				else {
-					++i;
-				}
-			}
-
-			// if there is no good candidate found, increase the range and start over the process
-			if (good_candidates.size() == 0) {
-				continue;
-			}
-
-			// if there is only one option, select it.
-			if (good_candidates.size() == 1) {
-				return good_candidates[0];
-			}
-
-#if 1
-			// find the best candidate
-			float min_val = std::numeric_limits<float>::max();
-			int best_id = -1;
-			float alpha = 0.5;
-			for (int i = 0; i < good_candidates.size(); ++i) {
-				// compute the average Ver/Hor
-				float total_Ver = 0;
-				for (int k = 1; k < (int)good_candidates[i].size() - 1; ++k) {
-					total_Ver += Ver(good_candidates[i][k]);
-				}
-
-				float avg_Ver = total_Ver / ((int)good_candidates[i].size() - 2);
-
-				// compute stddev of heights
-				std::vector<float> heights;
-				for (int k = 0; k < (int)good_candidates[i].size() - 1; ++k) {
-					int h = good_candidates[i][k + 1] - good_candidates[i][k];
-					heights.push_back(h);
-				}
-				float stddev = utils::stddev(heights);
-				if (heights.size() > 0) {
-					float avg_h = utils::mean(heights);
-					stddev /= avg_h;
-				}
-
-				if (avg_Ver * alpha + stddev * (1 - alpha) < min_val) {
-					min_val = avg_Ver  * alpha + stddev * (1 - alpha);
-					best_id = i;
-				}
-			}
-
-			return good_candidates[best_id];
-#endif
-
-#if 0
-			// compute S
-			float min_S = std::numeric_limits<float>::max();
-			int best_id = -1;
-			for (int i = 0; i < good_candidates.size(); ++i) {
-				float avg_S = 0;
-				if (good_candidates[i].size() >= 3) {
-					float total_S = 0;
-					for (int j = 0; j < good_candidates[i].size() - 2; ++j) {
-						int h1 = good_candidates[i][j + 1] - good_candidates[i][j];
-						int h2 = good_candidates[i][j + 2] - good_candidates[i][j + 1];
-						if (std::abs(h1 - h2) / h1 < 0.1) {
-							cv::Mat roi1(img, cv::Rect(0, good_candidates[i][j], img.cols, h1));
-							cv::Mat roi2(img, cv::Rect(0, good_candidates[i][j + 1], img.cols, h2));
-							total_S += MI(roi1, roi2);
-						}
-					}
-
-					avg_S = total_S / (good_candidates[i].size() - 2);
-				}
-
-				if (avg_S < min_S) {
-					min_S = avg_S;
-					best_id = i;
-				}
-			}
-
-			return good_candidates[best_id];
-#endif
+		for (int i = y_splits.size() - 1; i >= 0; i--) {
+			y_splits[i] = findLocalMin(Ver, y_splits[i]);
+			if (y_splits[i] == -1) y_splits.erase(y_splits.begin() + i);
 		}
-		
-		// if there is no good splits found, use the original candidate splits
-		std::cerr << "-----------------------------------" << std::endl;
-		std::cerr << "No good split is found!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-		std::vector<float> y_splits;
-		getSplitLines(Ver, 0.1, y_splits);
+
 		y_splits.insert(y_splits.begin(), 0);
 		y_splits.push_back(img.rows - 1);
 
@@ -820,42 +694,51 @@ namespace fs {
 		}
 	}
 
-	cv::Scalar getDominantColor(const cv::Mat& img, std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, int clusterCount) {
+	/**
+	* Get the dominant color in the image.
+	* Note: exclude the black color.
+	*
+	* @param img				image
+	* @param cluster_count		#clusters
+	* @return					dominant color
+	*/
+	cv::Scalar getDominantColor(const cv::Mat& img, int cluster_count) {
 		cv::Mat lab_img;
 		cv::cvtColor(img, lab_img, cv::COLOR_BGR2Lab);
 
 		// k-means
-		std::vector<std::vector<float>> raw_samples;
-		for (int i = 0; i < y_splits.size() - 1; ++i) {
-			for (int j = 0; j < x_splits.size() - 1; ++j) {
-				if (win_rects[i][j].valid != fs::WindowPos::VALID) continue;
+		std::vector<std::vector<float>> samples;
+		double avg_l = 0;
+		int cnt = 0;
+		for (int r = 0; r < img.rows; r++) {
+			for (int c = 0; c < img.cols; c++) {
+				if (img.at<cv::Vec3b>(r, c) == cv::Vec3b(0, 0, 0)) continue;
+				cv::Vec3b& col = lab_img.at<cv::Vec3b>(r, c);
 
-				for (int v = 0; v < y_splits[i + 1] - y_splits[i]; ++v) {
-					for (int u = 0; u < x_splits[j + 1] - x_splits[j]; ++u) {
-						if (v >= win_rects[i][j].top && v <= win_rects[i][j].bottom && u >= win_rects[i][j].left && u <= win_rects[i][j].right) continue;
-
-						cv::Vec3b col = lab_img.at<cv::Vec3b>(y_splits[i] + v, x_splits[j] + u);
-
-						std::vector<float> v(3);
-						for (int k = 0; k < 3; ++k) {
-							v[k] = col[k];
-						}
-						raw_samples.push_back(v);
-					}
+				std::vector<float> v(3);
+				for (int k = 0; k < 3; ++k) {
+					v[k] = col[k];
 				}
+				samples.push_back(v);
+				avg_l += col[0];
+				cnt++;
 			}
 		}
-		cv::Mat samples(raw_samples.size(), 3, CV_32F);
-		for (int i = 0; i < raw_samples.size(); ++i) {
+
+		// avg lightness
+		avg_l /= cnt;
+
+		cv::Mat samples_mat(samples.size(), 3, CV_32F);
+		for (int i = 0; i < samples.size(); ++i) {
 			for (int k = 0; k < 3; ++k) {
-				samples.at<float>(i, k) = raw_samples[i][k];
+				samples_mat.at<float>(i, k) = samples[i][k];
 			}
 		}
 
 		cv::Mat labels;
 		int attempts = 5;
 		cv::Mat centers;
-		cv::kmeans(samples, clusterCount, labels, cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001), attempts, cv::KMEANS_PP_CENTERS, centers);
+		cv::kmeans(samples_mat, cluster_count, labels, cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 10000, 0.0001), attempts, cv::KMEANS_PP_CENTERS, centers);
 		std::vector<int> hist(centers.rows, 0);
 		for (int i = 0; i < labels.rows; ++i) {
 			int l = labels.at<int>(i, 0);
@@ -880,7 +763,19 @@ namespace fs {
 		cv::cvtColor(temp, temp, cv::COLOR_Lab2BGR);
 		cv::Vec3b rgb_col = temp.at<cv::Vec3b>(0, 0);
 
-		return cv::Scalar(rgb_col[2], rgb_col[1], rgb_col[0]);
+		return cv::Scalar(std::min(255, (int)(rgb_col[2] * 1.2)), std::min(255, (int)(rgb_col[1] * 1.2)), std::min(255, (int)(rgb_col[0] * 1.2)));
+	}
+
+	void getWallImage(cv::Mat img, std::vector<float> y_splits, std::vector<float> x_splits, std::vector<std::vector<WindowPos>> win_rects, cv::Mat& result) {
+		result = img.clone();
+
+		for (int i = 0; i < y_splits.size() - 1; ++i) {
+			for (int j = 0; j < x_splits.size() - 1; ++j) {
+				if (win_rects[i][j].valid != fs::WindowPos::VALID) continue;
+
+				cv::rectangle(result, cv::Rect(x_splits[j] + win_rects[i][j].left, y_splits[i] + win_rects[i][j].top, win_rects[i][j].right - win_rects[i][j].left + 1, win_rects[i][j].bottom - win_rects[i][j].top + 1), cv::Scalar(0, 0, 0), -1);
+			}
+		}
 	}
 
 	bool isLocalMinimum(const cv::Mat& mat, int index, float threshold) {
