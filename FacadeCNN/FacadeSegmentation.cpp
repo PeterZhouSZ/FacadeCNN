@@ -7,7 +7,7 @@
 namespace fs {
 	int seq = 0;
 
-	void subdivideFacade(cv::Mat img, float average_floor_height, float average_column_width, std::vector<float>& y_splits, std::vector<float>& x_splits, std::vector<std::vector<WindowPos>>& win_rects) {
+	void subdivideFacade(cv::Mat img, float average_floor_height, float average_column_width, std::vector<float>& y_splits, std::vector<float>& x_splits) {
 		// gray scale
 		cv::Mat gray_img;
 		cv::cvtColor(img, gray_img, cv::COLOR_BGR2GRAY);
@@ -29,7 +29,7 @@ namespace fs {
 
 		// compute Ver and Hor
 		cv::Mat_<float> Ver, Hor;
-		computeVerAndHor2(blurred_gray_img, Ver, Hor, 0.0);
+		computeVerAndHor(blurred_gray_img, Ver, Hor, 0.0);
 
 		// smooth Ver and Hor
 		if (kernel_size_V > 1) {
@@ -54,8 +54,6 @@ namespace fs {
 		cv::Range w_range1 = cv::Range(average_column_width * 0.6, average_column_width * 1.3);
 		cv::Range w_range2 = cv::Range(average_column_width * 0.3, average_column_width * 1.95);
 		x_splits = findBoundaries(blurred_gray_img.t(), w_range1, w_range2, std::round(img.cols / average_column_width) + 1, Hor);
-		
-		extractWindows(gray_img, y_splits, x_splits, win_rects);
 	}
 
 	std::vector<float> findBoundaries(const cv::Mat& img, cv::Range range1, cv::Range range2, int num_splits, const cv::Mat_<float>& Ver) {
@@ -159,7 +157,6 @@ namespace fs {
 				return good_candidates[0];
 			}
 
-#if 1
 			// find the best candidate
 			float min_val = std::numeric_limits<float>::max();
 			int best_id = -1;
@@ -192,42 +189,9 @@ namespace fs {
 			}
 
 			return good_candidates[best_id];
-#endif
-
-#if 0
-			// compute S
-			float min_S = std::numeric_limits<float>::max();
-			int best_id = -1;
-			for (int i = 0; i < good_candidates.size(); ++i) {
-				float avg_S = 0;
-				if (good_candidates[i].size() >= 3) {
-					float total_S = 0;
-					for (int j = 0; j < good_candidates[i].size() - 2; ++j) {
-						int h1 = good_candidates[i][j + 1] - good_candidates[i][j];
-						int h2 = good_candidates[i][j + 2] - good_candidates[i][j + 1];
-						if (std::abs(h1 - h2) / h1 < 0.1) {
-							cv::Mat roi1(img, cv::Rect(0, good_candidates[i][j], img.cols, h1));
-							cv::Mat roi2(img, cv::Rect(0, good_candidates[i][j + 1], img.cols, h2));
-							total_S += MI(roi1, roi2);
-						}
-					}
-
-					avg_S = total_S / (good_candidates[i].size() - 2);
-				}
-
-				if (avg_S < min_S) {
-					min_S = avg_S;
-					best_id = i;
-				}
-			}
-
-			return good_candidates[best_id];
-#endif
 		}
 		
 		// if there is no good splits found, use the original candidate splits
-		std::cerr << "-----------------------------------" << std::endl;
-		std::cerr << "No good split is found!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 		std::vector<float> y_splits;
 		getSplitLines(Ver, 0.1, y_splits);
 		y_splits.insert(y_splits.begin(), 0);
@@ -236,388 +200,14 @@ namespace fs {
 		return y_splits;
 	}
 
-	bool sortBySecondValue(const std::pair<float, float>& a, const std::pair<float, float>& b) {
-		return a.second < b.second;
-	}
-
-	void sortByS(std::vector<float>& splits, std::map<int, float>& S_max) {
-		std::vector<std::pair<float, float>> list;
-		for (int i = 0; i < splits.size(); ++i) {
-			list.push_back(std::make_pair(splits[i], S_max[splits[i]]));
-		}
-
-		std::sort(list.begin(), list.end(), sortBySecondValue);
-
-		splits.clear();
-		for (int i = list.size() - 1; i >= 0; --i) {
-			splits.push_back(list[i].first);
-		}
-	}
-
-	void extractWindows(cv::Mat gray_img, const std::vector<float>& y_splits, const std::vector<float>& x_splits, std::vector<std::vector<WindowPos>>& win_rects) {
-		// compute gradient magnitude
-		cv::Mat sobelx;
-		cv::Sobel(gray_img, sobelx, CV_32F, 1, 0);
-		cv::multiply(sobelx, sobelx, sobelx);
-
-		cv::Mat sobely;
-		cv::Sobel(gray_img, sobely, CV_32F, 0, 1);
-		cv::multiply(sobely, sobely, sobely);
-
-		cv::Mat_<float> grad_mag;
-		cv::sqrt(sobelx + sobely, grad_mag);
-
-		win_rects.resize(y_splits.size() - 1);
-		for (int i = 0; i < y_splits.size() - 1; ++i) {
-			win_rects[i].resize(x_splits.size() - 1);
-			for (int j = 0; j < x_splits.size() - 1; ++j) {
-				int x1 = x_splits[j];
-				int x2 = x_splits[j + 1] - 1;
-				int y1 = y_splits[i];
-				int y2 = y_splits[i + 1] - 1;
-				int w = x2 - x1 + 1;
-				int h = y2 - y1 + 1;
-
-				int min_w = w * 0.1;
-				int min_h = h * 0.1;
-
-				// tile image
-				cv::Mat tile_img(gray_img, cv::Rect(x1, y1, w, h));
-
-				// Update: 2016/12/07
-				// use Ver/Hor of this tile instead of the global ones
-				cv::Mat_<float> Ver, Hor;
-				computeVerAndHor2(tile_img, Ver, Hor, 0.0);
-
-
-				// compute max/min of Ver/Hor
-				float top_Ver = Ver(0);
-				float bottom_Ver = Ver(h - 1);
-				float max_Ver = 0;
-				for (int k = 0; k < h; ++k) {
-					if (Ver(k) > max_Ver) {
-						max_Ver = Ver(k);
-					}
-				}
-				float left_Hor = Hor(0);
-				float right_Hor = Hor(w - 1);
-				float max_Hor = 0;
-				for (int k = 0; k < w; ++k) {
-					if (Hor(k) > max_Hor) {
-						max_Hor = Hor(k);
-					}
-				}
-
-				// define the threshold of Ver/Hor
-				float top_threshold_Ver = (max_Ver - top_Ver) * 0.2 + top_Ver;
-				float bottom_threshold_Ver = (max_Ver - bottom_Ver) * 0.2 + bottom_Ver;
-				float left_threshold_Hor = (max_Hor - left_Hor) * 0.2 + left_Hor;
-				float right_threshold_Hor = (max_Hor - right_Hor) * 0.2 + right_Hor;
-
-				// defind a threshold
-				float threshold1 = 50;
-				float threshold2 = 150;
-
-				// detect edge
-				//cv::Mat roi(gray_img, cv::Rect(x1, y1, w, h));
-				cv::Mat edges;
-				cv::Canny(tile_img, edges, threshold1, threshold2);
-				
-				// sum up edge horizontally and vertically
-				cv::Mat edgeV, edgeH;
-				cv::reduce(edges, edgeV, 1, cv::REDUCE_SUM, CV_32F);
-				cv::reduce(edges, edgeH, 0, cv::REDUCE_SUM, CV_32F);
-				edgeH = edgeH.t();
-
-
-
-
-				// find the left edge of the window
-				int left = -1;
-				bool flag = false;
-				for (int xx = 0; xx < w; ++xx) {
-					if (!flag) {
-						if (Hor(xx) < left_threshold_Hor) continue;
-						flag = true;
-					}
-					if (edgeH.at<float>(xx, 0) >= 255 * h * 0.1) {
-						left = xx;
-						break;
-					}
-				}
-
-				// find the right edge of the window
-				int right = -1;
-				flag = false;
-				for (int xx = w - 1; xx >= 0; --xx) {
-					if (!flag) {
-						if (Hor(xx) < right_threshold_Hor) continue;
-						flag = true;
-					}
-					if (edgeH.at<float>(xx, 0) >= 255 * h * 0.1) {
-						right = xx;
-						break;
-					}
-				}
-
-				// find the top edge of the window
-				int top = -1;
-				flag = false;
-				for (int yy = 0; yy < h; ++yy) {
-					if (!flag) {
-						if (Ver(yy) < top_threshold_Ver) continue;
-						flag = true;
-					}
-					if (edgeV.at<float>(yy, 0) >= 255 * w * 0.1) {
-						top = yy;
-						break;
-					}
-				}
-
-				// find the bottom edge of the window
-				int bottom = -1;
-				flag = false;
-				for (int yy = h - 1; yy >= 0; --yy) {
-					if (!flag) {
-						if (Ver(yy) < top_threshold_Ver) continue;
-						flag = true;
-					}
-					if (edgeV.at<float>(yy, 0) >= 255 * w * 0.1) {
-						bottom = yy;
-						break;
-					}
-				}
-
-				if (left >= 0 && right >= 0 && right - left + 1 >= min_w && top >= 0 && bottom >= 0 && bottom - top + 1 > min_h && (right - left + 1) / (bottom - top + 1) < 8 && (bottom - top + 1) / (right - left + 1) < 8) {
-					win_rects[i][j] = WindowPos(left, top, right, bottom);
-				}
-				else {
-					win_rects[i][j].valid = WindowPos::INVALID;
-				}
-			}
-		}
-	}
-
 	/**
-	* 2つの領域の類似度を返却する。
-	*
-	* @param R1		領域1 (1-channel image)
-	* @param R2		領域2 (1-channel image)
-	* @return			類似度
-	*/
-	float MI(const cv::Mat& R1, const cv::Mat& R2) {
-#if 1
-		cv::Mat_<float> Pab(256, 256, 0.0f);
-		cv::Mat_<float> Pa(256, 1, 0.0f);
-		cv::Mat_<float> Pb(256, 1, 0.0f);
-
-		// create a histogram of intensities
-		for (int r = 0; r < R1.rows; ++r) {
-			for (int c = 0; c < R1.cols; ++c) {
-				int a = R1.at<unsigned char>(r, c);
-				int b = R2.at<unsigned char>(r, c);
-
-				Pab(a, b)++;
-				Pa(a, 0)++;
-				Pb(b, 0)++;
-			}
-		}
-
-		// normalize the historgram
-		cv::Mat Pab_max;
-		cv::Mat Pa_max;
-		cv::Mat Pb_max;
-		cv::reduce(Pab, Pab_max, 0, CV_REDUCE_SUM);
-		cv::reduce(Pab_max, Pab_max, 1, CV_REDUCE_SUM);
-		cv::reduce(Pa, Pa_max, 0, CV_REDUCE_SUM);
-		cv::reduce(Pb, Pb_max, 0, CV_REDUCE_SUM);
-		Pab /= Pab_max.at<float>(0, 0);
-		Pa /= Pa_max.at<float>(0, 0);
-		Pb /= Pb_max.at<float>(0, 0);
-
-		float result = 0.0f;
-		for (int a = 0; a < 256; ++a) {
-			for (int b = 0; b < 256; ++b) {
-				float v = Pab(a, b);
-				if (v == 0) {
-					v = 0.001f * 0.001f;
-				}
-				float v1 = Pa(a, 0);
-				if (v1 == 0) v1 = 0.001f;
-				float v2 = Pb(b, 0);
-				if (v2 == 0) v2 = 0.001f;
-
-				float hoge = Pab(a, b) * log(v / v1 / v2);
-				result += Pab(a, b) * log(v / v1 / v2);
-			}
-		}
-
-		return result;
-#endif
-#if 0
-		cv::Mat norm_R1;
-		cv::Mat norm_R2;
-
-		return expf(-cvutils::msd(R1, R2) * 0.001f);
-#endif
-	}
-
-	/**
-	* Facade画像のS_max(y)、h_max(y)を計算する。
-	*
-	* @param img		Facade画像 (1-channel image)
-	* @param SV_max		S_max(y)
-	* @param h_max		h_max(y)
-	* @param h_range	range of h
-	*/
-	void computeSV(const cv::Mat& img, cv::Mat_<float>& SV_max, cv::Mat_<int>& h_max, const cv::Range& h_range) {
-		SV_max = cv::Mat_<float>(img.rows, 1, 0.0f);
-		h_max = cv::Mat_<float>(img.rows, 1, 0.0f);
-
-		printf("computing");
-		for (int r = 0; r < img.rows; ++r) {
-			printf("\rcomputing r = %d/%d  ", r, img.rows);
-
-			computeSV(img, r, SV_max(r), h_max(r), h_range);
-		}
-		printf("\n");
-	}
-
-	void computeSV(const cv::Mat& img, int r, float& SV_max, int& h_max, const cv::Range& h_range) {
-		SV_max = 0;
-		h_max = 0;
-
-		for (int h = h_range.start; h <= h_range.end; ++h) {
-			if (r - h < 0 || r + h >= img.rows) continue;
-
-			cv::Mat R1 = img(cv::Rect(0, r, img.cols, h));
-			cv::Mat R2 = img(cv::Rect(0, r - h, img.cols, h));
-			float SV = MI(R1, R2);
-
-			if (SV > SV_max) {
-				SV_max = SV;
-				h_max = h;
-			}
-		}
-	}
-
-	/**
-	* Facade画像のS_max(x)、w_max(x)を計算する。
-	*
-	* @param img		Facade画像 (1-channel image)
-	* @param SH_max	S_max(x)
-	* @param w_max		w_max(x)
-	* @param w_range	range of w
-	*/
-	void computeSH(const cv::Mat& img, cv::Mat_<float>& SH_max, cv::Mat_<int>& w_max, const cv::Range& w_range) {
-		SH_max = cv::Mat_<float>(img.cols, 1, 0.0f);
-		w_max = cv::Mat_<float>(img.cols, 1, 0.0f);
-
-		printf("computing");
-		for (int c = 0; c < img.cols; ++c) {
-			printf("\rcomputing c = %d/%d  ", c, img.cols);
-
-			computeSH(img, c, SH_max(c), w_max(c), w_range);
-		}
-		printf("\n");
-	}
-
-	void computeSH(const cv::Mat& img, int c, float& SH_max, int& w_max, const cv::Range& w_range) {
-		SH_max = 0;
-		w_max = 0;
-
-		for (int w = w_range.start; w <= w_range.end; ++w) {
-			if (c - w < 0 || c + w >= img.cols) continue;
-
-			cv::Mat R1 = img(cv::Rect(c, 0, w, img.rows));
-			cv::Mat R2 = img(cv::Rect(c - w, 0, w, img.rows));
-			float SH = MI(R1, R2);
-
-			if (SH > SH_max) {
-				SH_max = SH;
-				w_max = w;
-			}
-		}
-	}
-
-	/**
-	* imgから、Ver(y)とHor(x)を計算する。
-	*
-	* @param img		image (3-channel color image)
-	* @param Ver		Ver(y)
-	* @param Hor		Hor(x)
-	*/
-	void computeVerAndHor(const cv::Mat& img, cv::Mat_<float>& Ver, cv::Mat_<float>& Hor, float sigma) {
-		cv::Mat grayImg;
-		cv::cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
-
-		float alpha = 0.9f;
-
-		// compute hor(x,y) and ver(x,y) according to Equation (3)
-		cv::Mat_<float> hor(grayImg.rows, grayImg.cols);
-		cv::Mat_<float> ver(grayImg.rows, grayImg.cols);
-		for (int r = 0; r < grayImg.rows; ++r) {
-			for (int c = 0; c < grayImg.cols; ++c) {
-				float dIdx;
-				float dIdy;
-
-				if (c == 0) {
-					dIdx = grayImg.at<unsigned char>(r, c + 1) - grayImg.at<unsigned char>(r, c);
-				}
-				else if (c == grayImg.cols - 1) {
-					dIdx = grayImg.at<unsigned char>(r, c) - grayImg.at<unsigned char>(r, c - 1);
-				}
-				else {
-					dIdx = (grayImg.at<unsigned char>(r, c + 1) - grayImg.at<unsigned char>(r, c - 1)) / 2.0f;
-				}
-
-				if (r == 0) {
-					dIdy = grayImg.at<unsigned char>(r + 1, c) - grayImg.at<unsigned char>(r, c);
-				}
-				else if (r == grayImg.rows - 1) {
-					dIdy = grayImg.at<unsigned char>(r, c) - grayImg.at<unsigned char>(r - 1, c);
-				}
-				else {
-					dIdy = (float)(grayImg.at<unsigned char>(r + 1, c) - grayImg.at<unsigned char>(r - 1, c)) / 2.0f;
-				}
-
-				hor(r, c) = std::max(dIdy * dIdy * (1.0f - alpha) - dIdx * dIdx * alpha, 0.0f);
-				ver(r, c) = std::max(dIdx * dIdx * (1.0f - alpha) - dIdy * dIdy * alpha, 0.0f);
-			}
-		}
-
-		// sum up the ver(x, y) horizontally and vertically, respectively
-		cv::Mat ver_xtotal;
-		cv::Mat ver_ytotal;
-		cv::reduce(ver, ver_xtotal, 1, cv::REDUCE_SUM);
-		cv::reduce(ver, ver_ytotal, 0, cv::REDUCE_SUM);
-
-		// sum up the hor(x, y) horizontally and vertically, respectively
-		cv::Mat hor_xtotal;
-		cv::Mat hor_ytotal;
-		cv::reduce(hor, hor_xtotal, 1, cv::REDUCE_SUM);
-		cv::reduce(hor, hor_ytotal, 0, cv::REDUCE_SUM);
-
-		// compute Ver(y) and Hor(x) according to Equation (4)
-		Ver = cv::Mat_<float>(grayImg.rows, 1, 0.0f);
-		Hor = cv::Mat_<float>(1, grayImg.cols, 0.0f);
-		float beta = 0.1f;
-		for (int r = 0; r < grayImg.rows; ++r) {
-			for (int rr = 0; rr < grayImg.rows; ++rr) {
-				Ver(r, 0) += (ver_xtotal.at<float>(rr, 0) - beta * hor_xtotal.at<float>(rr, 0)) * utils::gause(rr - r, sigma);
-			}
-		}
-		for (int c = 0; c < grayImg.cols; ++c) {
-			for (int cc = 0; cc < grayImg.cols; ++cc) {
-				Hor(0, c) += (hor_ytotal.at<float>(0, cc) - beta * ver_ytotal.at<float>(0, cc)) * utils::gause(cc - c, sigma);
-			}
-		}
-	}
-
-	/**
-	 * 俺の方式。
+ 	 * imgから、Ver(y)とHor(x)を計算する。
+	 *
+	 * @param img		image (3-channel color image)
+	 * @param Ver		Ver(y)
+	 * @param Hor		Hor(x)
 	 */
-	void computeVerAndHor2(const cv::Mat& img, cv::Mat_<float>& Ver, cv::Mat_<float>& Hor, float alpha) {
+	void computeVerAndHor(const cv::Mat& img, cv::Mat_<float>& Ver, cv::Mat_<float>& Hor, float alpha) {
 		cv::Mat grayImg;
 		cvutils::grayScale(img, grayImg);
 
@@ -719,105 +309,6 @@ namespace fs {
 			}
 		}
 		*/
-	}
-
-	// 間隔が狭すぎる場合は、分割して隣接領域にマージする
-	void refineSplitLines(std::vector<float>& split_positions, float threshold) {
-		// 最大の間隔を計算する（ただし、１階は除く）
-		float max_interval = 0;
-		for (int i = 0; i < split_positions.size() - 2; ++i) {
-			float interval = split_positions[i + 1] - split_positions[i];
-			if (interval > max_interval) max_interval = interval;
-		}
-
-		while (true) {
-			bool updated = false;
-			for (int i = 0; i < split_positions.size() - 1;) {
-				if (split_positions[i + 1] - split_positions[i] < max_interval * threshold) {
-					if (i == 0) {
-						split_positions.erase(split_positions.begin() + 1);
-					}
-					else if (i == split_positions.size() - 2) {
-						split_positions.erase(split_positions.begin() + split_positions.size() - 2);
-					}
-					else {
-						split_positions[i] = (split_positions[i + 1] + split_positions[i]) * 0.5;
-						split_positions.erase(split_positions.begin() + i + 1);
-					}
-					updated = true;
-				}
-				else {
-					i++;
-				}
-			}
-
-			if (!updated) break;
-		}
-	}
-
-	/**
-	 * 分割線の一部を削除し、分割線の間隔が等間隔に近くなるようにする。
-	 */
-	void distributeSplitLines(std::vector<float>& split_positions, float threshold) {
-		std::vector<int> flags(split_positions.size() - 2, 0);
-
-		float min_stddev = std::numeric_limits<float>::max();
-		std::vector<int> min_flags;
-
-		while (true) {
-			// count 1s
-			int cnt_ones = 0;
-			for (int i = 0; i < flags.size(); ++i) {
-				if (flags[i] == 1) cnt_ones++;
-			}
-
-			// valid only if 1s are more than 50%
-			if ((float)(cnt_ones + 2) / split_positions.size() > threshold) {
-				// compute the distances between split lines
-				std::vector<float> intervals;
-				float prev_pos = split_positions[0];
-				for (int i = 1; i < split_positions.size(); ++i) {
-					if (i < split_positions.size() - 1 && flags[i - 1] == 0) continue;
-
-					intervals.push_back(split_positions[i] - prev_pos);
-					prev_pos = split_positions[i];
-				}
-
-				// compute the stddev of intervals
-				float stddev = utils::stddev(intervals);
-
-				// update the minimum stddev
-				if (stddev < min_stddev) {
-					min_stddev = stddev;
-					min_flags = flags;
-				}
-			}
-
-			// next permutation
-			bool carried = false;
-			for (int i = 0; i < flags.size(); ++i) {
-				if (flags[i] == 1) {
-					flags[i] = 0;
-				}
-				else if (flags[i] == 0) {
-					flags[i] = 1;
-					carried = true;
-					break;
-				}
-			}
-			if (!carried) break;
-		}
-
-		std::vector<float> tmp = split_positions;
-		split_positions.clear();
-		for (int i = 0; i < tmp.size(); ++i) {
-			if (i == 0 || i == tmp.size() - 1) {
-				split_positions.push_back(tmp[i]);
-			}
-			else if (min_flags[i - 1] == 1) {
-				split_positions.push_back(tmp[i]);
-			}
-		}
 	}
 
 	/**

@@ -235,30 +235,16 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	float average_floor_height = (float)facade_img.rows / num_floors;
 	float average_column_width = (float)facade_img.cols / num_columns;
 
-	//////////////////////////////////////////////////////////////////////////////////
-	// DEBUG
-	std::cout << "----------------------------------------------" << std::endl;
-	std::cout << "#floors = " << num_floors << ", #columns = " << num_columns << std::endl;
-	std::cout << "----------------------------------------------" << std::endl;
-	//////////////////////////////////////////////////////////////////////////////////
-
 	// subdivide the facade into tiles and windows
-	fs::subdivideFacade(facade_img, average_floor_height, average_column_width, y_splits, x_splits, win_rects);
+	fs::subdivideFacade(facade_img, average_floor_height, average_column_width, y_splits, x_splits);
 
 	// update #floors and #columns
-	//num_floors = y_splits.size() - 1;
-	//num_columns = x_splits.size() - 1;
+	num_floors = y_splits.size() - 1;
+	num_columns = x_splits.size() - 1;
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// DEBUG
-	std::cout << "----------------------------------------------" << std::endl;
-	std::cout << "updated after subdivision:" << std::endl;
-	std::cout << "#floors = " << num_floors << ", #columns = " << num_columns << std::endl;
-	std::cout << "----------------------------------------------" << std::endl;
-	//////////////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////////////
-	// DEBUG
+	/*
 	QFileInfo file_info(input_filename);
 	for (int i = 0; i < y_splits.size() - 1; i++) {
 		for (int j = 0; j < x_splits.size() - 1; j++) {
@@ -269,40 +255,9 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 			cv::imwrite(tile_filename.toUtf8().constData(), tile_img_resized);
 		}
 	}
+	*/
 	//////////////////////////////////////////////////////////////////////////////////
 
-
-	///////////////
-	// DEBUG
-	// base line for the facade subdivisiobn
-#if 0
-	y_splits.clear();
-	for (int i = 0; i < num_floors + 1; ++i) {
-		y_splits.push_back((float)(facade_img.rows - 1) / num_floors * i);
-	}
-	x_splits.clear();
-	for (int i = 0; i < num_columns + 1; ++i) {
-		x_splits.push_back((float)(facade_img.cols - 1) / num_columns * i);
-	}
-	win_rects.resize(y_splits.size() - 1);
-	for (int i = 0; i < y_splits.size() - 1; ++i) {
-		win_rects[i].resize(x_splits.size() - 1);
-		for (int j = 0; j < x_splits.size() - 1; ++j) {
-			win_rects[i][j].valid = fs::WindowPos::INVALID;
-		}
-	}
-#endif
-
-	////////////////////////////////////////////////////////////////////////////////
-	// 2017/8/23
-	// get the facade image excluding windows
-	cv::Mat facade_wall_img;
-	fs::getWallImage(facade_img, y_splits, x_splits, win_rects, facade_wall_img);
-	cv::imwrite("facade_wall.png", facade_wall_img);
-
-	// extract a dominant color for the entire region of facade
-	cv::Scalar facade_color = fs::getDominantColor(facade_wall_img, 10);
-	std::cout << "Facade color = (" << facade_color[0] << "," << facade_color[1] << "," << facade_color[2] << ")" << std::endl;
 
 	// gray scale
 	cv::Mat facade_gray_img;
@@ -310,6 +265,7 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	cv::cvtColor(facade_gray_img, facade_gray_img, cv::COLOR_GRAY2BGR);
 
 	// use window positioning CNN to locate windows
+	win_rects.resize(y_splits.size() - 1, std::vector<fs::WindowPos>(x_splits.size() - 1));
 	for (int i = 0; i < y_splits.size() - 1; ++i) {
 		for (int j = 0; j < x_splits.size() - 1; ++j) {
 			cv::Mat tile_img(facade_gray_img, cv::Rect(x_splits[j], y_splits[i], x_splits[j + 1] - x_splits[j] + 1, y_splits[i + 1] - y_splits[i] + 1));
@@ -328,7 +284,6 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 
 			if (fs::WindowPos::VALID) {
 				// predict the window position
-				//std::vector<float> pred_params = win_pos_regression->Predict(resized_tile_img);
 				std::vector<float> pred_params = wp::parameterEstimation(win_pos_regression, resized_tile_img, true, 0.1, 3000);
 				//utils::output_vector(pred_params);
 				win_rects[i][j].left = std::round(pred_params[0] * tile_img.cols);
@@ -338,6 +293,18 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 			}
 		}
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// 2017/8/23
+	// get the facade image excluding windows
+	cv::Mat facade_wall_img;
+	fs::getWallImage(facade_img, y_splits, x_splits, win_rects, facade_wall_img);
+	cv::imwrite("facade_wall.png", facade_wall_img);
+
+	// extract a dominant color for the entire region of facade
+	cv::Scalar facade_color = fs::getDominantColor(facade_wall_img, 10);
+	std::cout << "Facade color = (" << facade_color[0] << "," << facade_color[1] << "," << facade_color[2] << ")" << std::endl;
+
 
 	//////////////////////////////////////////////////////////////////////////////////////////
 	// HACK:
@@ -382,13 +349,6 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 			num_columns--;
 		}
 	}
-
-	std::cout << "----------------------------------------------" << std::endl;
-	std::cout << "updated after removing non-window floors/columns:" << std::endl;
-	std::cout << "#updated floors = " << num_floors << ", #updated columns = " << num_columns << std::endl;
-	std::cout << "----------------------------------------------" << std::endl;
-	//////////////////////////////////////////////////////////////////////////////////////////
-
 
 	// generate facade segmentation image
 	segmentation_result = facade_img.clone();
