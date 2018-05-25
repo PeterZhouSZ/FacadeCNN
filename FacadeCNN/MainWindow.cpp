@@ -239,12 +239,11 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 	fs::subdivideFacade(facade_img, average_floor_height, average_column_width, y_splits, x_splits);
 
 	// update #floors and #columns
-	num_floors = y_splits.size() - 1;
-	num_columns = x_splits.size() - 1;
+	//num_floors = y_splits.size() - 1;
+	//num_columns = x_splits.size() - 1;
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// DEBUG
-	/*
 	QFileInfo file_info(input_filename);
 	for (int i = 0; i < y_splits.size() - 1; i++) {
 		for (int j = 0; j < x_splits.size() - 1; j++) {
@@ -255,7 +254,6 @@ void MainWindow::parseFacade(const QString& input_filename, std::vector<float>& 
 			cv::imwrite(tile_filename.toUtf8().constData(), tile_img_resized);
 		}
 	}
-	*/
 	//////////////////////////////////////////////////////////////////////////////////
 
 

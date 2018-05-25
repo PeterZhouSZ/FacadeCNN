@@ -4,7 +4,7 @@
 ParameterEstimationDialog::ParameterEstimationDialog(QWidget *parent) : QDialog(parent) {
 	ui.setupUi(this);
 
-	ui.lineEditTestDataDirectory->setText("C:/code/pixel_wise_accuracy/ECP_facade_only/val");
+	ui.lineEditTestDataDirectory->setText("facade3");
 	ui.lineEditSegmentationOutputDirectory->setText("segmentation");
 	ui.lineEditInitialOutputDirectory->setText("initial_parsing");
 	ui.lineEditOutputDirectory->setText("final_parsing");
